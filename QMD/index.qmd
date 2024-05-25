@@ -1,0 +1,72 @@
+```{r}
+#| echo: false
+#| message: false
+#| error: false
+#| warning: false
+
+source("global.R")
+```
+
+# Preface
+
+Ce document constitue une synthèse des concepts fondamentaux liés à l'analyse statistique des données quantitatives, couvrant de manière exhaustive les sujets habituellement abordés dans les cours de méthodes quantitatives du premier cycle universitaire.  
+
+1. **Probabilités et Distributions de Probabilités**
+
+Ce premier volet expose les bases théoriques des probabilités ainsi que les différentes distributions de probabilités, telles que la distribution normale, la distribution binomiale et la distribution de Poisson. Il aborde également les concepts de fonctions de densité et de fonction de répartition.  
+
+2. **Statistiques Descriptives Univariées**  
+
+Les statistiques descriptives univariées permettent de résumer et de présenter des caractéristiques importantes d'une seule variable. Elles incluent des mesures de tendance centrale (moyenne, médiane, mode), de dispersion (écart-type, variance, étendue) et de forme de distribution (asymétrie, aplatissement).  
+
+3. **Statistiques Descriptives Bivariées**  
+
+Ce chapitre traite des méthodes permettant de décrire et d'explorer les relations entre deux variables. On y étudie notamment les diagrammes de dispersion, les coefficients de corrélation et les régressions simples.  
+
+4. **Distributions d'échantillonnage** 
+
+Les distributions d'échantillonnage fournissent des informations sur la distribution des estimateurs et des statistiques échantillonnales. Elles sont cruciales pour comprendre les principes de l'inférence statistique.  
+
+5. **Inférence Statistique portant sur un Échantillon unique**  
+
+Ce volet explore les méthodes permettant de tirer des conclusions sur une population à partir des données trecueillies auprès d'un seul échantillon. Il inclut des concepts tels que l'estimation ponctuelle et par intervalle, ainsi que les tests d'hypothèses.  
+
+6. **Inférence Statistique portant sur deux Échantillons**    
+
+Cette section élargit les principes de l'inférence statistique à la comparaison de deux échantillons, que ce soit pour tester des différences de moyennes, de proportions ou de variances.  
+
+7. **Analyse de Tableaux de Contingence**  
+
+L'analyse de tableaux de contingence explore les relations entre variables catégorielles à l'aide de tests comme le chi-carré et des mesures d'association telles que le coefficient de contingence.  
+
+8. **Analyse de Régression Linéaire Simple**  
+
+Cette méthode permet de modéliser la relation linéaire entre une variable indépendante et une variable dépendante. On y aborde l'estimation des paramètres, l'interprétation des résultats et les diagnostics du modèle.  
+
+9. **Analyse de Régression Linéaire Multiple** 
+
+La régression linéaire multiple étend la régression simple à plusieurs variables indépendantes. Elle permet d'explorer les relations complexes entre plusieurs prédicteurs et une variable dépendante.
+
+L'exposition de ces concepts est solidement appuyée par l'utilisation du progiciel R. Toutes les commandes nécessaires pour reproduire les résultats sont fournies en option, accessibles via le bouton Code précédant chaque résultat.  Par exemple:
+
+```{r}
+#| code-fold: true
+#| code-summary: "Code"
+
+# Génération de 10 nombres aléatoires, normalement distribués
+x <- rnorm(10)
+cat("Voici 10 nombres aléatoires: ", round(x, 3))
+
+```
+
+Pour faciliter la gestion des blocs de code, il est possible de les afficher ou de les masquer en cliquant sur **</> Code**, en haut et à droite de la première page du document.
+
+Pour se préparer à la lecture des paragraphes impliquant la programmation R, le premier chapitre offre une porte d'entrée précieuse dans le monde de ce langage. Bien qu'il puisse sembler optionnel au premier abord, acquérir une maîtrise des léments de base de R revêt une importance significative pour une compréhension plus approfondie des concepts statistiques abordés dans les chapitres suivants. En effet, bien que la théorie statistique puisse être appréhendée de manière abstraite et conceptuelle, la capacité à appliquer cette théorie de manière concrète à travers des manipulations de données et des analyses (que ce soit à l'aide de R, de Stata ou de tout autre logiciel pertinent) ouvre des portes insoupçonnées. Les codes R ne sont pas simplement des lignes de commandes cryptiques: ils sont les outils concrets qui permettent de donner vie aux concepts abstraits. Par conséquent, même si les aspects théoriques peuvent sembler être le cœur de l'apprentissage, négliger l'apprentissage des fondements de R serait s'aventurer dans un monde statistique partiellement éclairé. En maîtrisant le langage R, on acquiert la capacité de transformer les concepts théoriques en résultats tangibles, de visualiser les données, de tester des hypothèses et de communiquer efficacement ses découvertes. En somme, l'apprentissage de R transcende la simple acquisition d'une compétence technique: il devient un catalyseur essentiel pour une compréhension globale et une application pratique des concepts statistiques.
+
+<!-- ### Au sujet de ce livre {-} -->
+
+<!-- Ce document a été rédigé à l'aide de [bookdown](https://bookdown.org/), un module [@R-bookdown], conçu pour le format R Markdown et [knitr](https://yihui.org/knitr/) [@xie2015].   -->
+
+
+
+

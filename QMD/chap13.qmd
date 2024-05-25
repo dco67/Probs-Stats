@@ -1,0 +1,3946 @@
+---
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+```{r}
+#| echo: false
+#| message: false
+
+source("global2.R")
+
+if(!exists("HaitiPop")){load("./data/HaitiPop_Env.RData")}
+
+```
+
+# Inférence Statistique: deux échantillons
+
+Les procédures d'estimation et de test d'hypothèse impliquant un
+échantillon unique, étudiées dans les précédents chapitres, s'appliquent
+d'une manière conceptuellement identique lorsque deux échantillons sont
+comparés. Par exemple, là où il était question d'estimation d'une
+moyenne, il sera maintenant question d'estimation de la différence entre
+deux moyennes, impliquant une distribution d'échantillonnage d'une
+différence de moyennes et son erreur-standard. Ainsi, hormis quelques
+détails procéduraux, les mêmes concepts seront repris et appliqués.
+
+## Deux échantillons: indépendants ou dépendants?
+
+Deux situations peuvent se présenter, lorsqu'on examine les différences
+susceptibles d'exister entre deux (ou plusieurs) échantillons:
+
+-   D'une part, les observations faites sur ces échantillons peuvent
+    être indépendantes non seulement à l'intérieur de chacun des
+    échantillons, mais également **entre** eux. En d'autres termes, les
+    observations faites sur un échantillon ne nous apprennent absolument
+    rien concernant les observations faites sur l'autre (ou les autres)
+    échantillon(s). Les données sont indépendantes, n'ont aucun lien
+    entre elles. Par exemple, lorsqu'on compare la performance d'une
+    classe de mathématiques enseignée par le professeur X à celle d'une
+    classe enseignée par le professeur Y, on peut considérer que nous
+    sommes en présence d'échantillons indépendants.
+
+-   D'autre part, les observations faites sur un échantillon peuvent
+    être liées, ou associées à celles faites sur un ou plusieurs autres
+    échantillons. Ce lien se traduit par une corrélation, ou une
+    association, entre les données: en connaissant une observation
+    provenant du premier échantillon, on peut apprendre quelque chose
+    sur l'observation qui lui est appariée dans le second échantillon.
+    Par exemple, supposons un échantillon dont la performance des sujets
+    dans une tâche donnée est évaluée **avant** et **après** une
+    formation visant à améliorer leur efficacité. Dans un tel cas, ce
+    sont les mêmes sujets que l'on évalue à deux (ou plusieurs)
+    reprises, de sorte qu'une portion importante des facteurs
+    susceptibles d'affecter la performance est *égalisée* entre les deux
+    évaluations. En conséquence, les données sont corrélées, et
+    l'analyse doit tenir compte de ce fait.
+
+## Estimation: deux échantillons indépendants
+
+Les concepts définis et évoqués pour l'estimation de paramètres à partir
+d'un échantillon unique sont aisément applicables aux cas impliquant
+deux échantillons. On pourra s'intéresser, par exemple, à la différence
+pouvant exister entre les moyennes, les médianes, les variances, les
+proportions ou toute autre quantité définissant les caractéristiques de
+deux populations. Le résultat de l'opération sera un intervalle
+susceptible de capturer la différence entre les paramètres de deux
+populations, avec un certain niveau de confiance. On cherchera à
+répondre à des questions telles que:
+
+**Quel intervalle pourrait capturer la différence entre la performance
+moyenne des garçons et celle des filles en mathématiques, au niveau
+fondamental?**
+
+Pour obtenir cet intervalle, il sera nécessaire de spécifier la
+distribution d'échantillonnage des différences de moyennes. De manière à
+obtenir cette distribution, on devra tirer un échantillon de la première
+population (garçons) et calculer sa moyenne; on fera de même pour un
+échantillon tiré de la seconde population (filles), pour finalement
+obtenir la différence entre les deux moyennes échantillonnales. En
+répétant l'exercice un grand nombre de fois, on pourra obtenir la
+distribution d'échantillonnage essentielle au processus d'estimation.
+C'est l'approche que nous avons utilisée pour l'estimation d'un
+paramètre d'une seule population.
+
+### Intervalle de confiance pour groupes indépendants: Approche empirique {#sec-exemple1a}
+
+La fonction **RandUnif()** (@lst-RandUnif) permet de générer des
+ensembles de données aléatoires d'une population uniformément
+distribuée. Les bornes de la distribution sont sélectionnées
+aléatoirement à l'intérieur d'un intervalle donné. Les arguments de
+cette fonction sont:
+
+**RandUnif(n=50, a=10, b=50)**\
+\* **n**: Nombre d'observations à générer\
+\* **a**: Scalaire indiquant la limite inférieure de la distribution\
+\* **b**: Scalaire indiquant la limite supérieure de la distribution
+
+La fonction retourne une liste contenant le vecteur des nombres
+aléatoires générés, la limite inférieure et la limite supérieure de la
+distribution, au niveau de la population. Supposant que les résultats de
+la génération de données sont sauvegardées dans la liste **x1**, on
+pourra accéder aux données générées en utilisant **x1\[\[1\]\]**, à la
+limite inférieure au niveau de la population par **x1\[\[2\]\]** et à la
+limite supérieure par **x1\[\[3\]\]**.
+
+Supposons deux échantillons indépendants de $n_1 =$ 25 et $n_2 =$ 35
+observations, générées à l'aide de la fonction **RandUnif()**. Pour les
+besoins de la démonstration, les moyennes des populations d'où sont
+tirés les échantillons sont affichées. Mais rappelons que dans le monde
+réel, ces paramètres sont généralement inconnus et l'objectif d'une
+analyse est de les estimer.
+
+```{r 08-Chap8-7}
+#| code-fold: false
+
+set.seed(1)
+
+x1  <-  RandUnif(n=25,
+                 a=10,
+                 b=30)
+mu1  <-  (x1[[3]] + x1[[2]])/2      # Mu 1
+sig1 <- (x1[[3]]-x1[[2]])^2 / 12    # Sigma 1
+
+x2  <-  RandUnif(n=35,
+                 a=10,
+                 b=30)
+mu2  <-  (x2[[3]] + x2[[2]])/2      # Mu 2
+sig2 <- (x2[[3]]-x2[[2]])^2 / 12    # Sigma 2
+
+```
+
+Les paramètres des populations d'où sont tirés les échantillons, de même
+que les statistiques correspondantes au niveau de ces derniers, sont les
+suivants:
+
+```{r}
+#| echo: false
+
+m1 <- round(mu1, 3)
+s1 <- round(sig1, 3)
+m2 <- round(mu2, 3)
+s2 <- round(sig2, 3)
+diffm <- round(mu1 - mu2, 3)
+
+xb1 <- round(mean(x1[[1]]), 3)
+sd1 <- round(sd(x1[[1]]), 3)
+xb2 <- round(mean(x2[[1]]), 3)
+sd2 <- round(sd(x2[[1]]), 3)
+diffxb <- round(xb1 - xb2, 3)
+```
+
+**Paramètres**:\
+\* $\mu_1 = `r m1` \qquad \sigma_1 = `r sig1`$\
+\* $\mu_2 = `r m2` \qquad \sigma_2 = `r sig2`$\
+\* $\mu_1 - \mu_2 = `r diffm`$
+
+**Statistiques**:\
+\* $\bar{X}_1 = `r xb1` \qquad s_1 = `r sd1`$\
+\* $\bar{X}_2 = `r xb2` \qquad s_2 = `r sd2`$\
+\* $\bar{X}_1 - \bar{X}_2 = `r diffxb`$
+
+Quelle pourrait être la différence entre les moyennes des populations
+d'où sont tirés ces échantillons (en supposant qu'on ignore leurs
+valeurs!)? On peut calculer la différence entre les moyennes observées,
+mais le résultat ne peut être considéré que comme un reflet de la
+différence réelle existant entre les moyennes des populations. Pour les
+échantillons étudiés, cette différence est égale à `r diffxb`. La
+question est de savoir si cette différence est le reflèt d'une
+différence réelle au niveau de la population, et pour y répondre, il est
+nécessaire de connaître la distribution d'échantillonnage des
+différences de moyennes.
+
+De manière à obtenir cette distribution, procédons par
+ré-échantillonnage. Le code R suivant fait le nécessaire et la
+distribution recherchée est affichée à la @fig-ddm1. Cette procédure
+consiste à échantillonner **avec remise** les deux échantillons
+originaux un grand nombre de fois ($nrep = 10000$), en calculer les
+moyennes et leurs différences, pour ensuite en établir la distribution.
+
+```{r echo=1:8}
+#| label: fig-ddm1
+#| fig-cap: "Distribution d'échantillonnage des différences de moyennes, obtenue par ré-échantillonnage (10,000 échantillons). Les lignes verticales rouges indiquent la position des percentiles 2.5 et 97.5, respectivement."
+#| code-fold: false
+
+nrep = 10000
+moydiff <- replicate(nrep,
+                    mean(sample(x1[[1]],
+                                length(x1[[1]]),
+                                replace=TRUE)) -
+                    mean(sample(x2[[1]],
+                                length(x2[[1]]),
+                                replace=TRUE)))
+hist(moydiff,
+     main="Distribution d'échantillonnage\n des différences de moyennes",
+     xlab="Différences de moyennes",
+     freq=FALSE,
+     breaks="FD")
+lims = quantile(moydiff,c(0.025,0.975))
+abline(v=lims,col="red",lwd=3)
+
+```
+
+En calculant les percentiles $P_{2.5}$ et $P_{97.5}$ de cette
+distribution, on obtient un intervalle de confiance (95%) pour
+différences de moyennes. Ainsi,
+
+<p style="text-align: center;">
+
+$C[$ `r round(lims[1], 3)` $\le \mu_1 - \mu_2 \le$
+`r round(lims[2], 3)`$]=95\%$
+
+</p>
+
+En répétant l'expérience un nombre infini de fois, 95% des intervalles
+de confiance pour différences de moyennes indépendantes captureraient la
+véritable différence des moyennes des populations
+($\mu_1-\mu_2=`r round(mu1-mu2, 3)`$).
+
+La fonction **boot.two.per()** de la librairie **wBoot** nous permet
+d'obtenir des résultats similaires, tel qu'illustré à la @fig-ddm1b. Les
+résultats diffèrent légèrement de ceux obtenus précédemment, puisque de
+nouveaux échantillons sont formés lors de l'application de la procédure.
+La fonction **print.boot.two()** produit l'impression des résultats sous
+une forme compacte.
+
+```{r}
+#| label: fig-ddm1b
+#| fig-cap: "Distribution d'échantillonnage des différences de moyennes"
+#| code-fold: false
+
+X1 <- x1[[1]]
+X2 <- x2[[1]]
+b.ind2 = wBoot::boot.two.per(X1, X2, 
+                             parameter = mean, 
+                             stacked = FALSE, 
+                             variable = NULL,
+                             null.hyp = 0, 
+                             alternative = "two.sided",
+                             conf.level = 0.95, 
+                             type = NULL, 
+                             R = 10000)
+wBoot::print.boot.two(b.ind2)
+```
+
+```{r}
+#| echo: false
+
+DiffObs <- round(b.ind2$Observed, 3)
+DiffMean <- round(b.ind2$Mean, 3)
+
+```
+
+On trouve une différence de $`r DiffObs`$ unités entre les deux
+moyennes. Sans surprise, la moyenne de la distribution de
+ré-échantillonnage est approximativement égale à cette différence
+($\mu_{\bar{X}_1 - \bar{X}_2}=`r DiffMean`$). La probabilité d'observer
+une telle différence en supposant qu'au niveau de la population cette
+différence est nulle, est très faible: $p < 0.001$. De plus, une
+différence nulle ne fait pas partie de l'intervalle de confiance:
+\[\`r b.ind2$Confidence.limits`\]. Ces évidences renforcent
+l'idée que les moyennes pourraient être différentes au niveau de la
+population.
+
+L'histogramme (@fig-ddm1b) indique la moyenne des différences entre les
+deux moyennes ( $\mu_{\bar{X}_1} - \mu_{\bar{X}_2}$ ) (ligne verticale
+verte) et l'intervalle de confiance (lignes verticales bleues). Notons
+que la moyenne de la distribution sera au moins approximativement égale
+à la différence des moyennes observée au niveau des échantillons. Pour
+$H_0:\mu_1-\mu_2=0$, si la valeur 0 se trouve à l'extérieur de
+l'intervalle de confiance, il y a évidence à l'effet que $H_0$ est
+fausse.
+
+#### Exemple 1: Différence de moyennes I {#sec-exemple1}
+
+Estimons la différence qui pourrait exister entre la performance moyenne
+des hommes et des femmes au test de HabilCog, dans le département des
+Nippes. Pour les besoins de cette estimation, formons un échantillon de 35 hommes et de 40 femmes. Le code
+R suivant effectue cet échantillonnage. 
+
+```{r}
+#| code-fold: false
+
+# Création des sous-populations
+subpop = subset(HaitiPop,(DEPARTEMENT=="4"),c(GENRE,HabilCog))
+subpopH = subset(subpop,GENRE=="M",HabilCog)
+subpopF = subset(subpop,GENRE=="F",HabilCog)
+# Création des échantillons
+nH = 35
+nF = 40
+xechH = subpopH$HabilCog[sample(1:nrow(subpopH),
+                                nH,
+                                replace=FALSE)]
+xechF = subpopF$HabilCog[sample(1:nrow(subpopF),
+                                nF,
+                                replace=FALSE)]
+
+```
+
+Les statistiques observées au niveau des échantillons sont les
+suivantes:
+
+```{r}
+#| echo: false
+
+tbl <- data.frame("Statistique" = c("Statistique" = "$\\bar{X}_H$", "$\\bar{X}_F$", "$\\bar{X}_H - \\bar{X}_F$"), 
+                  "Valeur" = c(mean(xechH), mean(xechF), mean(xechH)-mean(xechF)))
+
+xb1 <- round(mean(xechH), 3)
+sd1 <- round(sd(xechH), 3)
+xb2 <- round(mean(xechF), 3)
+sd2 <- round(sd(xechF), 3)
+diffxb <- round(xb1 - xb2, 3)
+
+```
+
+**Statistiques**:\
+\* $\bar{X}_1 = `r xb1` \qquad s_1 = `r sd1`$\
+\* $\bar{X}_2 = `r xb2` \qquad s_2 = `r sd2`$\
+\* $\bar{X}_1 - \bar{X}_2 = `r diffxb`$
+
+En appliquant une procédure de ré-échantillonnage ($k=100,000$) sur ces données, on obtient un ensemble de différences ($\bar{X}_1-\bar{X}_2$).
+
+```{r}
+#| code-fold: false
+
+nrep <- 100000  
+xbd <- replicate(nrep, 
+                 mean(sample(xechH, 
+                             length(xechH), 
+                             replace = TRUE)) 
+                 -
+                 mean(sample(xechF, 
+                             length(xechF),
+                             replace = TRUE)))
+
+```
+
+La distribution de ces valeurs, illustrée à la @fig-IC1, semble gaussienne avec une estimation ponctuelle  $\mu_{\bar{X}_1-\bar{X}_2}=\bar{X}_1-\bar{X}_2=`r round(mean(xbd, 3), 3)`$, et un écart-type  $\sigma_{\bar{X}_1-\bar{X}_2}=`r round(sd(xbd, 3), 3)`$.  En déterminant les percentiles $P_{2.5}$ et $P_{97.5}$ de cette distribution, on trouve les limites de l'intervalle de confiance pour $(1-\alpha)=0.95$. Cet intervalle est indiqué au bas de la @fig-IC1:
+
+```{r echo=1:2}
+#| code-fold: false
+
+qtl <- quantile(xbd, 
+                c(0.025, 0.975))
+```
+
+```{r}
+#| label: fig-IC1
+#| fig-cap: "Distribution de ré-échantillonnage de la différence de deux moyennes indépendantes. L'intervalle de confiance (95%) est bordé par les zones rouges, aux extrémités de la distribution et affiché au bas du graphique. La différence observée entre les deux moyennes (estimation ponctuelle) est représentée par un triangle vert, sur l'axe horizontal."
+#| echo: false
+
+obs_diff <- xb1 - xb2
+h <- hist(xbd, 
+          breaks = "FD", 
+          plot = FALSE)
+breaks <- h$breaks
+counts <- h$counts
+maxf <- max(h$counts)
+txt <- paste("$C\\left [", round(qtl[1], 3), "\\leq \\mu_1 - \\mu_2 \\leq ", round(qtl[2], 3), "\\right ]=95\\%$")
+txt1 <- paste("$(\\mu_1 - \\mu_2)_{Obs} =", round(obs_diff, 3), "$")
+txt2 <- paste("$\\sigma_{\\mu_1 - \\mu_2}=", round(sd(xbd), 3), "$")
+left_tail <- which(breaks >= min(xbd) & breaks < qtl[1])
+right_tail <- which(breaks > qtl[2] & breaks <= max(xbd))
+
+cols <- rep("lightblue", length(breaks))
+cols[left_tail] <- "red"
+cols[right_tail] <- "red"
+
+hist(xbd, 
+     breaks = breaks, 
+     col = cols, 
+     border = "white", 
+     main = "Distribution d'échantillonnage\n des Différences de Moyennes", 
+     ylab = "Fréquence",
+     sub = TeX(txt),
+     xlab = NULL,
+     xlim = c(quantile(xbd, 0.001), quantile(xbd, 0.999)),
+     cex.sub = 1.2)
+max_count <- max(h$counts)
+text(quantile(xbd, 0.001), maxf-maxf/3, labels = TeX(txt1), pos = 4)
+text(quantile(xbd, 0.001), maxf-maxf/2, labels = TeX(txt2), pos = 4)
+points(obs_diff, 0, pch = 17, col = "darkgreen", cex = 1.2)
+
+```
+
+
+De manière générale, l'intervalle de confiance pour la différences de deux moyennes indépendantes correspond aux percentiles $P_{(\alpha/2)\times 100}$ et $P_{(1-\alpha/2)\times 100}$, pour un intervalle bilatéral. On peut donc conclure qu'avec un niveau de confiance de $95\%$, parmi les valeurs comprises entre `r round(qtl[1], 3)` et `r round(qtl[1], 3)` on pourrait retrouver la différence réelle ($\mu_1-\mu_2$) au niveau des populations.
+
+Un résultat similaire, illustré à la  @fig-ddm2, pourrait s'obtenir à l'aide de la fonction **boot.two.per()** de la librairie **wBoot**:
+
+```{r}
+#| label: fig-ddm2
+#| fig-cap: "Distribution d'échantillonnage des différences de moyennes, pour l'exemple 1"
+#| code-fold: false
+
+b.Diff = wBoot::boot.two.per(xechH,xechF,
+                             mean,
+                             conf.level=0.95,
+                             R=100000,
+                             stacked=FALSE)
+b.Diff
+
+```
+
+Les résultats indiquent qu'il y a 95% des chances que la véritable
+différence entre les moyennes des Hommes et des Femmes au test
+d'Habileté Cognitive, au niveau de la population des Nippes, fasse
+partie des valeurs comprises entre les limites de l'intervalle
+`r b.Diff$Confidence.interval` 19 fois sur 20 $[(1-\alpha)=0.95]$.
+Notons que la valeur '0' (indiquant l'égalité entre les performances des
+hommes et des femmes) fait partie de cet intervalle. On ne pourrait donc
+pas conclure que les performances des hommes et des femmes sont
+différentes au niveau de la population, n'ayant pas d'évidence en ce
+sens.
+
+#### Exemple 2: Différence de proportions
+
+Estimons maintenant la différence dans la proportion des adultes
+accordant leur confiance au Candidat A, dans les départements du Nord et
+de l'Ouest. On dispose d'un échantillon de 250 sujets dans le
+département du Nord, et de 325 sujets dans de département de l'Ouest. Le
+code R suivant procède à l'échantillonnage à partir des données générées
+par la fonction **HaitiPopGen()** (@lst-HaitiPopGen), pour ensuite
+estimer la différence des proportions par ré-échantillonnage (100,000
+échantillons).
+
+```{r}
+#| code-fold: false
+
+# Création des sous-populations
+subpopN  <-  subset(HaitiPop,((DEPARTEMENT=="5")&(AGE>=18)), PrefPres)
+subpopO  <-  subset(HaitiPop,((DEPARTEMENT=="8")&(AGE>=18)), PrefPres)
+
+# Création des échantillons
+nN  <-  250
+nO  <-  325
+xechN  <-  subpopN$PrefPres[sample(1:nrow(subpopN), nN, replace=FALSE)]==1
+xechO  <-  subpopO$PrefPres[sample(1:nrow(subpopO), nO, replace=FALSE)]==1
+
+```
+
+Les statistiques observées au niveau des échantillons sont les
+suivantes, $p_{Nord}$ et $p_{Ouest}$ représentant les proportions des
+sujets favorisant le candidat A:
+
+```{r}
+#| echo: false
+
+xb1 <- round(mean(xechN), 3)
+xb2 <- round(mean(xechO), 3)
+diffxb <- round(xb1 - xb2, 3)
+
+```
+
+**Statistiques**:\
+\* $p_1 = `r xb1`$\
+\* $p_2 = `r xb2`$\
+\* $p_1 - p_2 = `r diffxb`$
+
+En appliquant une procédure de ré-échantillonnage ($k=100,000$) sur ces données, on obtient un ensemble de différences ($p_1-p_2$).  
+
+```{r}
+nrep <- 100000  
+xbd <- replicate(nrep, 
+                 mean(sample(xechN, 
+                             length(xechN), 
+                             replace = TRUE)) -
+                    mean(sample(xechO, 
+                             length(xechO),
+                             replace = TRUE)))
+```
+
+La distribution de ces valeurs, illustrée à la @fig-IC2, semble gaussienne avec une estimation ponctuelle  $\pi_1-\pi_2}=p_1-\pi_2=`r round(diffxb, 3)`$, et un écart-type  $\sigma_{p_1-p_2}=`r round(sd(xbd, 3), 3)`$.  En déterminant les percentiles $P_{2.5}$ et $P_{97.5}$ de cette distribution, on trouve les limites de l'intervalle de confiance pour $(1-\alpha)=0.95$. Cet intervalle est indiqué au bas de la @fig-IC2:
+
+```{r echo=1:2}
+#| code-fold: false
+
+qtl <- quantile(xbd, 
+                c(0.025, 0.975))
+```
+
+```{r}
+#| label: fig-IC2
+#| fig-cap: "Distribution de ré-échantillonnage de la différence de deux proportions indépendantes. L'intervalle de confiance (95%) est bordé par les zones rouges, aux extrémités de la distribution et affiché au bas du graphique. La différence observée entre les deux proportions (estimation ponctuelle) est représentée par un triangle vert, sur l'axe horizontal."
+#| echo: false
+
+obs_diff <- xb1 - xb2
+h <- hist(xbd, 
+          breaks = "FD", 
+          plot = FALSE)
+breaks <- h$breaks
+counts <- h$counts
+maxf <- max(h$counts)
+ txt <- paste("$C\\left [", round(qtl[1], 3), "\\leq \\pi_1 - \\pi_2 \\leq ", round(qtl[2], 3), "\\right ]=95\\%$")
+txt1 <- paste("$(p_1 - p_2)_{Obs} =", round(obs_diff, 3), "$")
+txt2 <- paste("$\\sigma_{p_1 - p_2}=", round(sd(xbd), 3), "$")
+left_tail <- which(breaks >= min(xbd) & breaks < qtl[1])
+right_tail <- which(breaks > qtl[2] & breaks <= max(xbd))
+
+cols <- rep("lightblue", length(breaks))
+cols[left_tail] <- "red"
+cols[right_tail] <- "red"
+
+hist(xbd, 
+     breaks = breaks, 
+     col = cols, 
+     border = "white", 
+     main = "Distribution d'échantillonnage\n des Différences de Proportions", 
+     ylab = "Fréquence",
+     sub = TeX(txt),
+     xlab = NULL,
+     xlim = c(quantile(xbd, 0.001), quantile(xbd, 0.999)),
+     cex.sub = 1.2)
+max_count <- max(h$counts)
+text(quantile(xbd, 0.001), maxf-maxf/3, labels = TeX(txt1), pos = 4)
+text(quantile(xbd, 0.001), maxf-maxf/2, labels = TeX(txt2), pos = 4)
+points(obs_diff, 0, pch = 17, col = "darkgreen", cex = 1.2)
+
+```
+On peut donc conclure qu'avec un niveau de confiance de $95\%$, parmi les valeurs comprises entre `r round(qtl[1], 3)` et `r round(qtl[1], 3)` on pourrait retrouver la différence réelle ($\pi_1-\pi_2$) au niveau des populations.
+
+Un résultat similaire, illustré à la  @fig-ddp2, pourrait s'obtenir à l'aide de la fonction **boot.two.per()** de la librairie **wBoot**:
+
+ 
+```{r}
+#| label: fig-ddp2
+#| fig-cap: "Distribution d'échantillonnage des proportions, pour l'exemple 2"
+#| code-fold: false
+
+b.Diff  <-  boot.two.per(xechN,xechO,
+                         mean,
+                         conf.level=0.95,
+                         R=100000,
+                         stacked=FALSE)
+print.boot.two(b.Diff)
+```
+
+Ici, on rapporte des moyennes et différences de moyennes, mais de fait,
+ces moyennes sont des proportions: rappelons que la moyenne de données
+binaires (0=contre, 1=pour) est une proportion.
+
+Les résultats suggèrent qu'on est confiant à 95% que la véritable
+différence entre les proportions des individus favorisant le Candidat A
+aux prochaines élections présidentielles des départements du Nord et de
+l'Ouest se trouve parmi les valeurs comprises à l'intérieur de
+l'intervalle `r b.Diff$Confidence.interval` 19 fois sur 20
+$[(1-\alpha)=0.95]$. Notons que la valeur '0' (indiquant l'égalité des
+proportions entre les deux régions du pays) ne fait pas partie de cet
+intervalle. On peut donc conclure qu'il pourrait y avoir une différence
+entre les proportions d’électeurs favorisant le Candidat A, dans les
+deux départements. En effet, une différence nulle entre ces proportions
+est un événement improbable.
+
+#### Exemple 3: Différences de variances
+
+Lorsqu'on doit estimer la différence entre deux variances, on serait
+immédiatement tenté d'adopter une stratégie analogue à l'estimation de
+la différence entre deux moyennes ou deux proportions. Cependant,
+contrairement aux moyennes ou aux proportions, qui sont des mesures de
+position pour lesquelles la différence simple est signifiante, une
+variance n'a pas d'unité de mesure et par conséquent ne peut être
+représentée sur un quelconque axe, et une simple différence entre deux
+variances $(\sigma_1^2-\sigma_2^2)$) ne signifie concrètement rien. Par
+contre, un rapport entre deux variances gagne en signifiance, et un tel
+rapport est permis, puisque le zéro absolu existe pour cette quantité
+(une variance peut être nulle, mais jamais négative). De plus, en
+s'assurant que la plus grande variance se trouve au numérateur, et la
+plus petite au dénominateur, on peut s'assurer au besoin, qu'une égalité
+de deux variances équivaudra à un rapport égal à 1.0.
+
+Formons donc un rapport tel que formulé par l'@eq-rapportf:
+
+$$F=\frac{s_1^2}{s_2^2} $$ {#eq-rapportf}
+
+$F$ devient alors un indice de la différence qui peut exister entre les
+deux variances, et on peut aisément en établir la distribution
+d'échantillonnage.
+
+Examinons la forme de la distribution de Fs calculés pour des paires
+d'échantillons de tailles $n_1 = 15$ et $n_2=25$, tirés d'une
+distribution normale avec $\mu=50$ et $\sigma=8$. Une telle distribution
+est illustrée à la @fig-distF1
+
+```{r echo=1:4}
+#| label: fig-distF1
+#| fig-cap: "Distribution d'échantillonnage des rapports F"
+
+nrep <- 100000
+n1 <- 15
+n2 <- 25
+f <- replicate(nrep, {
+  var_x1 <- var(rnorm(n1, 50, 8))
+  var_x2 <- var(rnorm(n2, 50, 8))
+  var_x1 / var_x2
+})
+
+hist(f,
+     breaks="FD",
+     main="Distribution d'échantillonnage de F",
+     xlab="Rapports F",
+     ylab="Densité",
+     col = "lightblue", 
+     border = "white", 
+     freq=FALSE,
+     xlim=c(0, quantile(f,0.99)))
+```
+
+On note immédiatement l'asymétrie positive de la distribution. On note
+également que 100% de la distribution se trouve sur la zone positive de
+l'axe horizontal, puisque le rapport entre deux quantités positives sera toujours lui-même positif. Et comme pour toutes les autres distributions que nous avons rencontrées jusqu'ici, on peut l'utiliser pour obtenir la
+probabilité de différents événements. Par exemple, la probabilité qu'un
+rapport F soit supérieur à 2 en tirant deux échantillons d'une
+population normalement distribuée avec $\mu=50$ et $\sigma=8$ serait:
+
+```{r}
+#| code-fold: false
+
+pr <- mean(f > 2)
+cat("P(F > 2) = ", pr)
+```
+
+et la zone centrale comprenant 95% de la distribution serait:
+
+```{r}
+#| code-fold: false
+
+fc <- quantile(f, c(0.025, 0.975))
+cat("P(", fc[1], "< F < ", fc[2], ") = 95%" )
+```
+
+Cette distribution, comme la distribution normale, de Student ou du $\chi^2$, occupe une grande place
+dans la littérature statistique.
+
+Pour fins d'illustration, considérons la différence qui pourrait exister
+entre la variabilité dans l'indice de criminalité (CRIMIDX) entre le
+département du Nord, et le département du Sud-Est. On tire un
+échantillon de 50 sujets âgés de 15 ans et plus du premier, et un
+échantillon de 60 du second. On calcule la variance des observations
+pour chacun des échantillons, et on établit le rapport F.
+
+```{r }
+#| code-fold: false
+
+# Spécification de la sous-population
+
+subpopN = subset(HaitiPop,((DEPARTEMENT=="5")&(AGE>=15)),CRIMIDX)
+subpopS = subset(HaitiPop,((DEPARTEMENT=="9")&(AGE>=15)),CRIMIDX)
+
+# Création des échantillons
+
+nN = 50
+nS = 60
+xechN = subpopN$CRIMIDX[sample(1:nrow(subpopN),nN,replace=FALSE)]
+xechS = subpopS$CRIMIDX[sample(1:nrow(subpopS),nS,replace=FALSE)]
+varN <- var(xechN)
+varS <- var(xechS)
+fech <- varN/varS
+
+```
+
+Les statistiques pertinentes sont les suivantes:
+
+```{r}
+#| echo: false
+
+txt <- "$F=\\frac{s_{Nord}^2}{s_{SudE}^2}=$"
+
+```
+
+
+-   $s_{Nord}^2 = `r round(varN, 3)`$\  
+-   $s_{SudE}^2 = `r round(varS, 3)`$\  
+-   `r paste(txt, round(fech, 3))`  
+  
+Pour établir un intervalle de confiance pour le rapport
+$F=\frac{\sigma_1^2}{\sigma_2^2}$ à partir des variances observées pour
+les deux échantillons, le ré-échantillonnage est approprié. Le code R
+suivant se charge du travail, et la distribution résultante est affichée
+dans la @fig-rapportf2: 
+
+```{r}
+#| code-fold: false
+
+nrep <- 100000
+xbd <- replicate(nrep, {
+  x1 <- sample(xechN, length(xechN), replace = TRUE)
+  x2 <- sample(xechS, length(xechS), replace = TRUE)
+  var(x1) / var(x2)
+})
+
+qtl <- quantile(xbd, c(0.025, 0.975))
+```
+
+```{r}
+#| label: fig-rapportf2
+#| fig-cap: "Distribution d'échantillonnage des rapports F quantifiant la dispersion de l'indice de criminalité dans les départements du Nord et du Sud-Est. L'intervalle de confiance (95%) correspond à la zone bleue, bordé par les valeurs indiquées sous le diagramme. Ces valeurs sont les 2.5e et 97.5e percentiles."
+#| echo: false
+
+obs_diff <- fech
+h <- hist(xbd, 
+          breaks = "FD", 
+          plot = FALSE)
+breaks <- h$breaks
+counts <- h$counts
+maxf <- max(h$counts)
+ txt <- paste("$C\\left [", round(qtl[1], 3), "\\leq \\phi \\leq ", round(qtl[2], 3), "\\right ]=95\\%$")
+txt1 <- paste("$F_{Obs} =", round(obs_diff, 3), "$")
+txt2 <- paste("$\\sigma_{F}=", round(sd(xbd), 3), "$")
+left_tail <- which(breaks >= min(xbd) & breaks < qtl[1])
+right_tail <- which(breaks > qtl[2] & breaks <= max(xbd))
+
+cols <- rep("lightblue", length(breaks))
+cols[left_tail] <- "red"
+cols[right_tail] <- "red"
+
+hist(xbd, 
+     breaks = breaks, 
+     col = cols, 
+     border = "white", 
+     main = "Distribution d'échantillonnage\n des Différences de Variances (Rapports F)", 
+     ylab = "Fréquence",
+     xlab = NULL,
+     xlim = c(quantile(xbd, 0.001), quantile(xbd, 0.999)),
+     cex.sub = 1.2)
+max_count <- max(h$counts)
+text(quantile(xbd, 0.85), maxf-maxf/3, labels = TeX(txt1), pos = 4)
+text(quantile(xbd, 0.85), maxf-maxf/2, labels = TeX(txt2), pos = 4)
+points(obs_diff, 0, pch = 17, col = "darkgreen", cex = 1.2)
+mtext(side=1, line = 3, at = -0.07, adj = -1.2, TeX(txt))
+
+```
+
+L'intervalle de confiance pour le rapport de variances obtenu se lit
+comme suit:
+
+$$C[`r round(qtl[1], 3) `\le \phi=\frac{\sigma_1^2}{\sigma_2^2}\le `r round(qtl[2], 3) `] = 95\% $$
+
+Nous sommes confiants à 95% que l'intervalle obtenu capture le rapport
+des variances au niveau des deux populations. Notons également que la
+valeur F = 1.0 fait partie des valeurs probables de ce rapport: nous
+n'avons pas d'évidence à l'effet que les deux variances soient
+différentes l'une de l'autre, au niveau des populations.
+
+On peut également utiliser la fonction **boot.per.two()** de la librairie **wBoot** pour obtenir des résultats conduisant aux mêmes conclusions. Par contre: 
+
+```{r}
+#| label: fig-Fboot1
+#| fig-cap: "Distribution d'échantillonnage du Rapport F"
+#| message: false
+#| code-fold: false
+
+Vr <-  function(x, y) {
+  F <- var(x) / var(y)  
+  return(F)
+}
+
+b.Diff = wBoot::boot.two.per(xechN, xechS,
+                             var,
+                             conf.level=0.95,
+                             R=100000,
+                             stacked=FALSE)
+wBoot::print.boot.two(b.Diff)
+
+
+```
+
+
+#### Exemple 4: Différences de consensus
+
+Estimons la différence dans le niveau de consensus concernant le projet
+d'une nouvelle Constitution au pays, au niveau des populations des
+régions nordiques (départements du Nord-Est, du Nord et du Nord-Ouest)
+et l'ensemble des départements du Centre et de l'Ouest. On dispose d'un
+échantillon de 250 sujets dans les départements du Nord, et de 325
+sujets dans les départements du Centre et de l'Ouest. Le code R suivant
+permet de simuler cette situation, et la @fig-consens1 en illustre le
+résultat.
+
+```{r }
+#| code-fold: false
+
+# Fonction cons(), combinant table() et consensus()
+cons = function(x){
+  tbl = table(x)
+  cns = agrmt::consensus(tbl)
+  return(cns)
+}
+
+# Création des sous-populations
+subpopN = subset(HaitiPop,
+                 ((DEPARTEMENT %in% c("5","6","7"))&(AGE>=18)), 
+                 OpinConst)
+subpopO = subset(HaitiPop,
+                 ((DEPARTEMENT %in% c("2","8"))&(AGE>=18)), 
+                 OpinConst)
+
+# Création des échantillons
+nN = 250
+nO = 325
+xechN = subpopN$OpinConst[sample(1:nrow(subpopN),
+                                 nN,
+                                 replace=FALSE)]
+xechO = subpopO$OpinConst[sample(1:nrow(subpopO),
+                                 nO,
+                                 replace=FALSE)]
+paste("Consensus: (Nord)  = ", round(cons(xechN), 4), "      (Ouest) = ", round(cons(xechO), 4))
+```
+
+Par ré-échantillonnage, on obtient la distribution d'échantillonnage à l'aide de la fonction **boot.two.per()**, de la librairie **wBoot**, présentée au chapitre @sec-Chap11:
+
+```{r}
+#| label: fig-consens1
+#| fig-cap: "Distribution d'échantillonnage du consensus"
+#| message: false
+#| code-fold: false
+
+b.Diff = wBoot::boot.two.per(xechN,xechO,
+                             cons,
+                             conf.level=0.95,
+                             R=100000,
+                             stacked=FALSE)
+wBoot::print.boot.two(b.Diff)
+```
+
+```{r echo=FALSE}
+cr=0
+if(0 > b.Diff$Confidence.limits[1] & 0 < b.Diff$Confidence.limits[2]){cr <- 1}
+```
+
+Les résultats nous permettent d'affirmer avec un niveau de confiance de
+95% que la véritable différence entre les niveaux de consensus
+concernant le projet de nouvelle Constitution au niveau des départements
+nordiques et des départements l'Ouest et du Centre est capturée par
+l'intervalle `r b.Diff$Confidence.interval` 19 fois sur 20
+$[(1-\alpha)=0.95]$. Notons que la valeur '0' (indiquant l'égalité des
+niveaux de consensus entre les deux régions du pays)
+`r ifelse(cr==0, "ne fait pas ", "fait ")` partie de cet intervalle. On
+peut donc conclure qu'une différence entre les niveaux de consensus dans
+les deux régions du pays est
+`r ifelse(cr==0, "probable ", "improbable")`.
+
+### Intervalle de confiance pour groupes indépendants: Approche analytique
+
+On a pu constater visuellement que la distribution d'échantillonnage des
+différences de moyennes était au moins approximativement normale. Comme
+on a pu le faire lorsqu'on devait estimer une seule moyenne sous réserve
+du respect de certains postulats, il est possible d'aborder le problème
+de manière analytique, en considérant que la distribution normale est un
+modèle adéquat pour l'obtention des probabilités requises pour le
+processus d'estimation.
+
+La distribution d'échantillonnage des différences de moyennes est
+caractérisée par:
+
+-   une distribution gaussienne, à la condition que les populations d'où
+    sont tirés les échantillons soient normales
+-   une moyenne qui à la limite, pour un nombre infini de paires
+    d'échantillons, est égale à la différence entre les moyennes des
+    populations ($\mu_1-\mu_2$)
+-   une erreur-standard définie par l'@eq-esdif1:
+
+$$
+\sigma_{\bar X_1-\bar X_2}=\sqrt{\frac{\sigma_1^2}{n_1}+\frac{\sigma_2^2}{n_2}}=\sqrt{\sigma_{\bar X_1}^2+\sigma_{\bar X_2}^2} 
+$$ {#eq-esdif1}
+
+Ces trois caractéristiques connues, la définition d'un intervalle de
+confiance pour différences de moyennes suit la même démarche que dans
+les cas étudiés jusqu'à maintenant, impliquant une statistique unique.
+L'@eq-esdif2 en formalise l'opération.
+
+$$
+C[(\bar X_1-\bar X_2)-z_{(1-\alpha/2)}\sigma_{\bar X_1-\bar X_2}\le (\mu_1-\mu_2) \le (\bar X_1-\bar X_2)+z_{(1-\alpha/2)}\sigma_{\bar X_1-\bar X_2}]=100\times(1-\alpha)\%
+$$ {#eq-esdif2}
+
+La formule s'allonge un peu, mais elle ne contient rien de nouveau,
+conceptuellement. La quantité $(\bar X_1-\bar X_2)$ est la statistique
+échantillonnale à partir de laquelle on tente d'estimer le paramètre
+correspondant: $(\mu_1-\mu_2)$; la quantité $z_{(1-\alpha/2)}$ est le
+percentile sous la distribution normale correspondant au niveau de
+confiance désiré. La marge d'erreur, on peut le deviner, est défini par
+l'@eq-esdif3:
+
+$$
+ME=z_{(1-\alpha/2)}\sigma_{\bar X_1-\bar X_2}
+$$ {#eq-esdif3}
+
+#### Exemple 5: Échantillons de grandes tailles (ou $\sigma_1$ et $\sigma_2$ connus) {#sec-exemple5}
+
+Examinons la différence qui pourrait exister entre l’indice de criminalité moyen chez les hommes vivant en Artibonite et ceux vivant dans le département du Sud. On peut disposer d’un échantillon de 50 sujets en Artibonite, et de 45 sujets dans le département du Sud. Le code R suivant produit des deux échantillons requis.
+
+```{r}
+#| code-fold: false
+
+set.seed(1234534)
+# Création des sous-populations
+subpopA = subset(HaitiPop,((DEPARTEMENT=="2")&(GENRE=="M")&(AGE>=15)),CRIMIDX)
+subpopS = subset(HaitiPop,((DEPARTEMENT=="10")&(GENRE=="M")&(AGE>=15)),CRIMIDX)
+
+# Création des échantillons
+nA = 50
+nS = 45
+xechA = subpopA$CRIMIDX[sample(1:nrow(subpopA),
+                               nA,
+                               replace=FALSE)]
+xechS = subpopS$CRIMIDX[sample(1:nrow(subpopS),
+                               nS,
+                               replace=FALSE)]
+```
+
+Pour résoudre ce problème, nous disposons des moyennes observées pour chaque échantillon, et les écarts-types de chaque populations:
+
+```{r echo=FALSE}
+
+dept <- c("Artibonite", "Sud")
+moy <- c(mean(xechA), mean(xechS))
+stdpop <- c(sd(subpopA$CRIMIDX), sd(subpopS$CRIMIDX))  # Sigmas connus
+std <- c(sd(xechA), sd(xechS))
+ns <- c(length(xechA), length(xechS))
+tab_01 <- data.frame(dept, moy, stdpop, std, ns)
+SEdiff <- sqrt((std[1]^2 / ns[1]) + (std[2]^2 / ns[2]))
+colnames(tab_01)  <-  c("Département", "Moyenne", "Écart-type (Population)","Écart-type (Échant.)", "n")
+tab_01 %>%
+  kbl(digits = 2,
+      caption = "Description des données échantillonnales") %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                 full_width=FALSE) 
+
+```
+
+À partir de ces données, on obtient l'erreur-standard des différences de
+moyennes (@eq-esdif1):
+
+$$
+\begin{align}
+\sigma_{\bar X_1-\bar X_2}&=\sqrt{\frac{\sigma_1^2}{n_1} +\frac{\sigma_2^2}{n_2}} \\
+&= \sqrt{\frac{`r round(stdpop[1], 3)`^2}{`r ns[1]`} +\frac{`r round(stdpop[2], 3)`^2}{`r ns[2]`}} \\
+&=`r round(SEdiff, 3)`
+\end{align}
+$$
+
+Pour un niveau de confiance de $100(1-\alpha)=95\%$, le percentile
+requis est $z=1.96$. On obtient donc:
+
+```{r echo=FALSE}
+sedm <- round(sqrt(sum(stdpop^2/ns)),3)
+difm <- round(mean(xechA)-mean(xechS),3)
+zc <- round(qnorm(0.975),3)
+           
+```
+
+$$
+\begin{align}
+C[(\bar X_1-\bar X_2)-z_{(1-\alpha/2)}\sigma_{\bar X_1-\bar X_2}\le (\mu_1-\mu_2) \le (\bar X_1-\bar X_2)+z_{(1-\alpha/2)}\sigma_{\bar X_1-\bar X_2}]=100\times(1-\alpha)\% \\ 
+C[(`r round(moy[1], 3)`-`r round(moy[2], 3)`)-`r zc`(`r round(sedm, 3)`)\le (\mu_1-\mu_2) \le (`r round(moy[1], 3)`-`r round(moy[2], 3)`)+`r round(zc, 3)`(`r round(sedm, 3)`)] &=95\% \\
+C[`r round(moy[1]- moy[2], 3)`-`r round(zc, 3)`(`r round(sedm, 3)`)\le (\mu_1-\mu_2) \le `r round(moy[1]- moy[2], 3)`+`r round(zc, 3)`(`r round(sedm, 3)`)] &=95\% \\
+C[`r round(difm - zc*sedm, 3)` \le (\mu_1-\mu_2) \le `r round(difm + zc*sedm, 3)`] &=95\%
+\end{align}
+$$
+
+On note qu'une différence nulle entre les moyennes est un événement probable, se trouvant à l'intérieur de cet intervalle.
+
+#### Exemple 6: Échantillons de petites tailles et $\sigma_1$ et $\sigma_2$ inconnus
+
+À l'instar de la procédure concernant une moyenne unique obtenue d'un
+échantillon de faible taille, il conviendra de considérer la
+distribution de Student afin de corriger pour la difficulté d'estimer la
+variabilité de la population dans ces conditions. Mais nous ajouterons
+un détail important:
+
+-   Considérant que nous sommes en présence de deux échantillons de
+    petite taille;\
+-   Considérant que l'estimation de la variabilité de chacune des
+    populations à partir de ces échantillons est difficile;\
+-   Il conviendra de combiner les deux échantillons de manière à obtenir
+    une meilleure estimation de la variabilité des populations, que l'on
+    considère commune à ces dernières.
+
+En présence de deux échantillons, potentiellement de petites tailles,
+tirés de populations dont les écarts-types sont inconnus, on obtiendra
+une variance combinée telle que définie par l'@eq-sc2.
+
+```{r echo=FALSE}
+sc <- round(sum((ns-1)*std^2)/(sum(ns)-2), 3)
+sedm <- round(sqrt(sum(sc/ns)), 3)
+dl <- sum(ns)-2
+liminf <- round(difm-qt(0.975,dl)*sedm,3)
+limsup <- round(difm+qt(0.975,dl)*sedm,3)
+```
+
+$$
+s_C^2=\frac{(n_1-1)s_1^2+(n_2-1)s_2^2}{n_1+n_2-2}=\frac{\sum\limits_{i=1}^{n_1}(X_{i1}-\bar X_1)^2+\sum\limits_{j=1}^{n_2} (X_{j2}-\bar X_2)^2}{n_1+n_2-2} 
+$$ {#eq-sc2}
+
+Pour les données observées à l'exemple 5, et supposanton
+trouve:
+
+$$s_C^2=\frac{(`r ns[1]`-1)`r round(std[1],3)`^2+(`r ns[2]`-1)`r round(std[2],3)`^2}{`r dl`}=`r sc`$$
+
+On utilise ensuite cette estimation de la variance dans le calcul de
+l'erreur-standard des différences de moyennes:
+
+$$s_{\bar X_1-\bar X_2}=\sqrt{\frac{s_C^2}{n_1}+\frac{s_C^2}{n_2}}= \sqrt{\frac{`r round(sc,3)`}{`r ns[1]`}+\frac{`r round(sc,3)`}{`r ns[2]`}}=`r sedm`$$
+
+Le nombre de degrés de liberté dans la présente situation est égal à:
+
+$$dl=(n_1-1)+(n_2-1)=n_1+n_2-2=`r ns[1]`+`r ns[2]`-2=`r dl`$$
+
+et le percentile correspondant, sous la distribution de Student est:
+
+```{r echo=1:2}
+#| code-fold: false
+
+tc <- round(qt(0.975, dl), 3)
+cat("t(97.5) = ", tc)
+m <- round(moy, 3)
+std <- round(std, 3)
+```
+
+$$
+C[(\bar X_1-\bar X_2)-t_{(dl;1-\alpha/2)}s_{\bar X_1-\bar X_2} \le \mu_1-\mu_2 \le (\bar X_1-\bar X_2)+t_{(dl;1-\alpha/2)} s_{\bar X_1-\bar X_2}]=100(1-\alpha)\% $$ 
+
+$$C[(`r round(moy[1], 3)`-`r round(moy[2], 3)`)-`r round(tc, 3)`(`r round(sedm, 3)`) \le \mu_1-\mu_2 \le (`r round(moy[1], 3)`-`r round(moy[2], 3)`)+`r round(tc, 3)`(`r round(sedm, 3)`)]=95\% $$
+
+$$
+C[`r difm`-`r tc`(`r sedm`) \le \mu_1-\mu_2 \le `r difm`+`r tc`(`r sedm`)]=95\% $$
+
+$$
+C[`r liminf` \le \mu_1-\mu_2 \le `r limsup`]=95\%
+$$
+
+
+#### Exemple 7: Estimation de différences de variances
+
+L'exemple 4, ci-dessus, nous a conduit la définition d'un rapport entre
+deux variances de manière à permettre l'évaluation de la différence qui
+existe entre elles. La distribution d'échantillonnage de ce rapport est
+asymétrique positive, et on se doute bien que cette asymétrie diminue
+avec une augmentation de la taille des échantillons. Une distribution de
+probabilité théorique présentant cette caractéristique est donc
+nécessaire pour formuler un intervalle de confiance pour une différence
+de variances, exprimée par le rapport F. Au chapitre 6, l'estimation
+d'une variance unique nécessitait l'emploi de la distribution du
+$\chi^2$, qui s'adaptait très bien à la distribution des valeurs
+'standardisées' des variances. Dans le cas de l'estimation de
+différences de variances, le processus est quelque peu différent, du
+fait que le rapport est constitué de deux statistiques échantillonnales
+et qu'il ne définit pas un $\chi^2$.
+
+La **distribution de Fisher-Snedecor**, ou **distribution F**, est la
+distribution de probabilité appropriée pour l'examen des rapports F.
+Elle est asymétrique positive, tel que requis pour la présente
+situation. Puisque les deux variances composant le rapport F sont des
+variables aléatoires lorsque calculées pour un grand nombre
+d'échantillons, un nombre de degrés de liberté sera associé à chacune
+d'elles:
+
+-   $dl_{num}=n_1-1$
+-   $dl_{dén}=n_2-1$
+
+La distribution F est complètement spécifiée par ces deux quantités,
+comme on peut le constater en examinant sa fonction de densité
+(@eq-distf1:
+
+$$
+f(X;dl_1, dl_2)=\frac{\sqrt{\frac{(dl_1 X)^{dl_1}dl_2^{dl_2}}{(dl_1 X+dl_2)^{dl_1+dl_2}}}}{X\textbf{B}\left (\frac{dl_1}{2},\frac{dl_2}{2}\right)} 
+$$ {#eq-distf1}
+
+La moyenne de cette distribution est définie par l'@eq-distf2:
+
+$$
+\mu_{F; dl_1, dl_2}=\frac{dl_2}{dl_2-2}
+$$ {#eq-distf2}
+
+et sa variance par l'@eq-distf3:
+
+$$
+\sigma_{F;dl_1,dl_2}^2=\frac{2 dl_2^2(dl_1+dl_2-2)}{dl_1(dl_2-2)^2(dl_2-4)} 
+$$ {#eq-distf3}
+
+Ces équations ne sont présentées ici que pour illustrer le fait que les
+deux seuls paramètres de cette distribution sont les nombres de degrés
+de liberté pour le numérateur et le dénominateur du rapport F. Pour
+toute combinaison de ces deux paramètres, une distribution F distincte
+existe. La @fig-DistribsF en présente quelques-unes, pour
+$dl_{dénom}=20$:
+
+```{r}
+#| label: fig-DistribsF
+#| fig-cap: "Famille de distributions F. Le nombre de degrés de liberté au dénominateur est fixé à 20. Une distribution est illustrée pour un sous-ensemble des nombres de degrés de liberté possibles pour le numérateur."
+#| echo: false
+
+# Représentation graphique d'une famille de distributions F
+
+x <- seq(from = 0, to = 4, length = 400)
+# 
+df2 <- 20
+y_1 <- df(x, 1, df2)
+y_2 <- df(x, 3, df2)
+y_3 <- df(x, 5, df2)
+y_4 <- df(x, 10, df2)
+y_5 <- df(x, 20, df2)
+y_6 <- df(x, 50, df2)
+y_7 <- df(x, 75, df2)
+y_8 <- df(x, 100, df2)
+# 
+plot(x, y_1, 
+     col = 1, 
+     type = "l", 
+     ylim=c(0, 1.3),
+     lwd=1.5,
+     main=(TeX("Distributions F pour $dl_{dénom} = 20$")),
+     ylab="Densité")
+lines(x, y_2, col = 2, lwd=1.5)
+lines(x, y_3, col = 3, lwd=1.5)
+lines(x, y_4, col = 4, lwd=1.5)
+lines(x, y_5, col = 5, lwd=1.5)
+lines(x, y_6, col = 6, lwd=1.5)
+lines(x, y_7, col = 7, lwd=1.5)
+lines(x, y_8, col = 8, lwd=1.5)
+# 
+legend("topright", title = "Distribution F",
+          c("dl = (1, 20)", "dl = (3, 20)", "dl = (5, 20)", "dl = (10, 20)", 
+            "dl = (20, 20)", "dl = (50, 20)", "dl = (75, 20)", "dl = (100, 20)"), 
+          col = c(1, 2, 3, 4, 5, 6, 7, 8), lty = 1, cex=0.8)
+
+```
+
+Sous R, les fonctions suivantes permettent d'effectuer les calculs de
+probabilité relatifs à cette distribution:
+
+-   **df(x, df1, df2)**: Fonction de densité
+-   **pf(q, df1, df2, lower.tail = TRUE)**: Fonction de probabilité
+    cumulative
+-   **qf(p, df1, df2, lower.tail = TRUE)**: Fonction quantile
+-   **rf(n, df1, df2)**: Génération de nombres aléatoires
+
+Par exemple, quelle est la probabilité d'obtenir un rapport F supérieur
+à 1.5, si $dl_1=5$ et $dl_2=30$?
+
+```{r}
+#| echo: false
+
+x <- seq(from=0, to=3, length=500)
+curve(df(x, df1 = 5, df2 = 30), 
+      from = 0, to = 4, 
+      n = 5000, 
+      col= "red", 
+      lwd=2,
+      ylab="Densité")
+abline(v=1.5, lty=2)
+pr <- pf(1.5, 5, 30, lower.tail=FALSE)
+text(3, 0.25, paste("P(X > 1.5) = ", round(pr, 3)), cex= 1.2)
+# cat("P(F(5,30) > 1.5) = ", pr)
+```
+
+À ce stade, nous disposons de tout ce qui est nécessaire pour construire
+un intervalle de confiance pour un rapport F. Cet intervalle est défini
+formellement par l'@eq-icf1.
+
+$$
+C \left [F_{(\alpha/2;dl_{num},dl_{dén})} \left( \frac{s_1^2}{s_2^2} \right ) \le \left (\frac{\sigma_1^2}{\sigma_2^2} \right ) \le F_{(1-\alpha/2;dl_{num},dl_{dén})} \left( \frac{s_1^2}{s_2^2} \right ) \right]=100(1-\alpha)\%
+$$ {#eq-icf1}
+
+Les quantités $F_{(\alpha/2;dl_{num},dl_{dén})}$ et
+$F_{(1-\alpha/2;dl_{num},dl_{dén})}$ sont les percentiles de la
+distribution de F correspondant au niveau de confiance désiré.
+
+Pour illustrer, reprenons l'exemple 4 et considérons la différence qui
+pourrait exister entre la variabilité dans l'indice de criminalité
+(CRIMIDX) entre le département du Nord, et le département du Sud-Est. On
+dispose d'un échantillon de 50 sujets âgés de 15 ans et plus du premier,
+et un échantillon de 60 du second. Les statistiques échantillonnales
+sont reproduites dans le tableau @tbl-tbl01:
+
+```{r}
+
+subpopN = subset(HaitiPop,((DEPARTEMENT=="5")&(AGE>=15)),CRIMIDX)
+subpopS = subset(HaitiPop,((DEPARTEMENT=="9")&(AGE>=15)),CRIMIDX)
+
+nN = 50
+nS = 60
+xechN = subpopN$CRIMIDX[sample(1:nrow(subpopN),nN,replace=FALSE)]
+xechS = subpopS$CRIMIDX[sample(1:nrow(subpopS),nS,replace=FALSE)]
+
+```
+
+```{r tbl01}
+#| label: tbl-tbl01
+#| tbl-cap: "Description des données échantillonnales"
+#| echo: false
+
+tab_01 <- data.frame(
+  dept <- c("Nord", "Sud-Est"),
+  moy <- round(c(mean(xechN), mean(xechS)), 3),
+  varx <- round(c(var(xechN), var(xechS)), 3),
+  ns <- c(length(xechN), length(xechS)))
+  colnames(tab_01)  <-  c("Département", "Moyenne", "Écart-type", "n")
+  tab_01 %>%
+    kbl(digits = 2) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                  full_width=FALSE) 
+```
+
+En utilisant un niveau de confiance de $(1-\alpha)=0.95$, les
+percentiles $P_{2.5}$ et $P_{97.5}$ de la distribution F pour
+$dl_{num}=50-1=49$, et $dl_{dén}=60-1=59$ sont:
+
+```{r}
+#| label: ic10
+intc <- qf(c(0.025, 0.975), 49, 59)
+cat("Percentiles P(2.5) et P(97.5)= ", intc)
+```
+
+et la @fig-distf5 en fournit une illustration.
+
+```{r }
+#| label: fig-distf5
+#| fig-cap: "Distribution F pour $dl_{num}=49$ et $dl_{dén}=59$"
+#| echo: false
+
+x <- seq(from=0, to=3, length=500)
+curve(df(x, df1 = 49, df2 = 59), 
+      from = 0, to = 4, 
+      n = 5000, 
+      col= "red", 
+      lwd=2,
+      xlim=c(0, 2.5),
+      ylab="Densité")
+abline(v=intc, lty=2)
+
+mtext(side=3, TeX(r'(Distribution F pour $dl_{num}=49$ et $dl_{dén}=59$)'), cex=1.2)
+mtext(at=intc[1], side=1, as.character(round(intc[1], 3)), cex = 1)
+mtext(at=intc[2], side=1, as.character(round(intc[2], 3)), cex = 1)
+
+
+```
+
+L'intervalle de confiance pour le rapport F est donc:
+
+```{r}
+#| label: ic11
+#| echo: false
+
+liminf=intc[1]*varx[1]/varx[2]
+limsup=intc[2]*varx[1]/varx[2]
+```
+
+$$
+\begin{align}
+C \left [F_{(\alpha/2;dl_{num},dl_{dén})} \left( \frac{s_1^2}{s_2^2} \right ) \le \left (\frac{\sigma_1^2}{\sigma_2^2} \right ) \le F_{(1-\alpha/2;dl_{num},dl_{dén})} \left( \frac{s_1^2}{s_2^2} \right ) \right]=100(1-\alpha)\% \\
+C \left [0.578 \left( \frac{`r varx[1]`}{`r varx[2]`} \right ) \le \left (\frac{\sigma_1^2}{\sigma_2^2} \right ) \le 1.707 \left( \frac{`r varx[1]`}{`r varx[2]`} \right ) \right ] = 95\% \\
+C \left [ `r round(liminf, 3)` \le \left (\frac{\sigma_1^2}{\sigma_2^2} \right ) \le `r round(limsup, 3)`  \right ] = 95\%
+\end{align}
+$$
+
+Il y a 95% des chances que le rapport des variances des populations soit
+une des valeurs délimitées par l'intervalle obtenu.
+
+#### Exemple 8: Estimation de différences de proportions
+
+Un intervalle de confiance pour une différence de proportions, on le
+devine, se construit à partir d'une distribution d'échantillonnage de
+différences de proportions. Une telle distribution sera caractérisée
+par:
+
+-   une forme gaussienne
+-   une moyenne ($\mu_{p_1-p_2}$) égale à la différence des proportions
+    au niveau des populations ($\pi_1-\pi_2$)
+-   un erreur-standard défini par l'@eq-distprop:
+
+$$
+s_{p_1-p_2}=\sqrt{\frac{p_1(1-p_1)}{n_1}+\frac{p_2(1-p_2)}{n_2}}
+$$ {#eq-distprop}
+
+L'intervalle de confiance d'une différence de proportions se construit à
+l'instar des autres intervalles de confiance étudiés jusqu'ici et prend
+la forme affichée à l'@eq-icprop1:
+
+$$
+C \left [ (p_1-p_2)-z_{1-\alpha}s_{p_1-p_2}  \le \pi_1-\pi_2 \le (p_1-p_2)+z_{1-\alpha}s_{p_1-p_2}\right ]=100(1-\alpha)\%
+$$ {#eq-icprop1}
+
+Pour fin d'illustration, reprenons l'exemple 3 et estimons la différence
+dans la proportion des adultes accordant leur confiance au Candidat A
+des départements du Nord et de l'Ouest. On dispose d'un échantillon de
+250 sujets dans le département du Nord, et de 325 sujets dans de
+département de l'Ouest.
+
+```{r}
+#| label: subpop1
+
+subpopN = subset(HaitiPop,((DEPARTEMENT=="5")&(AGE>=18)),PrefPres)
+subpopO = subset(HaitiPop,((DEPARTEMENT=="8")&(AGE>=18)),PrefPres)
+
+nN = 250
+nO = 325
+xechN = subpopN$PrefPres[sample(1:nrow(subpopN),nN,replace=FALSE)]==1
+xechO = subpopO$PrefPres[sample(1:nrow(subpopO),nO,replace=FALSE)]==1
+
+p1 <- round(mean(xechN), 3)
+p2 <- round(mean(xechO), 3)
+
+paste("Proportion: Nord  = ", p1, "    Ouest = ", p2)
+```
+
+À partir de ces données, on trouve une erreur-standard:
+
+```{r echo=FALSE}
+sep <- sqrt((p1*(1-p1)/nN)+(p2*(1-p2))/nO)
+```
+
+$$s_{p_1-p_2}=\sqrt{\frac{ p1(1-p1)}{250}+\frac {p2(1-p2)}{325}}=\sqrt{\frac{`r p1`(1-`r p1`)}{250}+\frac{`r p2`(1-`r p1`)}{325}}=`r round(sep, 3)`$$
+et pour un niveau de confiance de 95%, l'intervalle de confiance est
+défini par:
+
+```{r echo=FALSE}
+liminf <- (p1-p2)-1.96*round(sep, 3)
+limsup <- (p1-p2)+1.96*round(sep, 3)
+```
+
+$$
+\begin{align}
+C \left [ (p_1-p_2)-z_{1-\alpha}s_{p_1-p_2}  \le \pi_1-\pi_2 \le (p_1-p_2)+z_{1-\alpha}s_{p_1-p_2}\right ]&=100(1-\alpha)\%\\
+C \left [ (`r p1`)-`r p2`))-1.96(`r round(sep, 3)`)  \le \pi_1-\pi_2 \le (`r p1`)-`r p2`))+1.96(`r round(sep, 3)`)\right ]&=95\%\\
+C \left [ `r liminf`  \le \pi_1-\pi_2 \le `r limsup`\right ]&=95\%
+\end{align}
+$$
+
+On peut être confiant à 95% que la différence de proportions au niveau
+de la population est capturée par cet intervalle.
+
+## Test d'hypothèse pour groupes indépendants: Approche empirique {#sec-testHyp1}
+
+Au @sec-Chap11, le ré-échantillonnage était le véhicule privilégié pour une approche empirique à la vérification d'hypothèses. Cette méthode permettait de générer la distribution de ré-échantillonnage d'une statistique donnée, et d'en spécifier l'erreur-standard. La moyenne d'une telle distribution correspond à l'estimateur considéré. Armé de ces informations, on a pu mettre en oeuvre les inférences statistiques appropriées pour les situations impliquant un échantillon unique.  
+
+Il est toujours possible d'utiliser le ré-échantillonnage lorsqu'une analyse implique la vérification d'hypothèse concernant deux populations indépendantes. Il suffit de ré-échantillonner séparément chacun des échantillons et de calculer la différence entre les deux statistiques observées, répétant le processus un grand nombre de fois.  La moyenne de la distribution des différences est égale à la différence entre les statistiques observées pour les deux échantillons.  Cependant, il existe une alternative à cette procédure, généralement préférée: le **test de permutations**. 
+
+### Test de permutations
+
+On utilise le test de permutations pour générer une distribution sous $H_0$ pour une statistique mesurant une association entre deux variables, ou la différence entre les statistiques observées pour deux (ou plusieurs) groupes.
+
+Le concept est simple:
+
+-   La répartition des observations dans les deux groupes n'est qu'une
+    parmi $(n_1+n_2)!$ permutations possibles.
+
+-   En obtenant la statistique échantillonnale d'intérêt pour un grand
+    nombre de permutations des mêmes données, on obtient la distribution
+    d'échantillonnage de cette statistique
+
+-   Dès lors, on peut évaluer la probabilité d'obtenir la statistique
+    initiale ou des valeurs plus extrêmes.
+
+Essentiellement, la question posée est **combien parmi toutes les permutations qu'il est possible de former pour $n$ objets pris $n$ à la fois produiraient le résultat observé ou un résultat plus extrême?**  
+
+Pour illustrer, considérons l'expérience suivante. On dispose de 10 observations formant deux groupes. Le premier groupe obtient les scores 1 à 5, et le second groupe obtient les scores 6-10. La différence entre les deux moyennes est égale à -5. On procède au test de la manière suivante, supposant que la différence entre les deux moyennes est la statistique d'intérêt:  
+  
+- On génère toutes les permutations possibles (#P = n! = 10! = 3,628,800), répartissant chacune d'elles en 2 groupes (groupe 1 = observations 1-5; groupe 2 = observations 6-10). 
+- Pour chaque permutation, on calcule la différence entre leurs moyennes respectives.  
+- On obtient ainsi toutes les différences de moyennes qu'il est possible d'obtenir pour les données disponiles: elles forme la distribution d'échantillonnage des différences de moyennes.  
+- La moyenne de cette distribution est nulle, et son écart-type est l'erreur-standard des différences de moyennes.  
+
+Le code R suivant est une illustration de la procédure. On y utilise la fonction **permutations()** de la librairie **gtools**: 
+
+```{r echo=1:8}
+#| code-fold: false
+#| warning: false
+#| message: false
+
+perm <- gtools::permutations(10, 10, c(1:10)) # Permutations des nombres de 1 à 10
+
+mdif <- apply(perm,                           # Pour chaque permutation... 
+              MARGIN = 1, 
+              function(x) mean(x[1:5]) - mean(x[6:10])) # calcul de la différence entre les moyennes
+
+mtot <- mean(mdif)                    # Moyenne de la distribution des différences de moyennes
+stot <- sd(mdif)                      # Erreur-standard de la distribution des différences de moyennes
+sktot <- moments::skewness(mdif)      # Indice de symétrie
+kutot <- moments::kurtosis(mdif)      # Indice de voussure
+
+```
+
+$$\mu_{\Delta_{\bar{X}}}=`r mtot` \qquad \sigma_{\Delta_{\bar{X}}}=`r round(stot, 4)` \qquad Sk = `r sktot` \qquad Ku = `r round(kutot, 4)`$$
+
+La @fig-permdist représente la distribution des différences observées entre les moyennes des deux groupes ($\Delta_{\bar{X}}$). 
+
+```{r}
+#| label: fig-permdist
+#| fig-cap: "Distribution des différences de moyennes obtenues pour l'ensemble des permutations formées des nombres de 1 à 10, les 5 premiers et les 5 derniers formant deux groupes indépendants."
+#| echo: false
+
+txt.sub <- paste("$\\mu_{\\Delta_{\\bar{X}}}=$", mean(mtot))
+txt.main = "Distribution des $\\Delta_{\\bar{X}}$"
+hist(mdif, 
+     breaks = "FD",
+     xlab = NULL,
+     main = TeX(txt.main),
+     sub = TeX(txt.sub),
+     cex.sub = 1.5)
+
+```
+
+On note que la moyenne des différences observées entre les moyennes ($\mu_{\Delta_{\bar{X}}}$) est essentiellement nulle ($-1.17 \times 10^{-20})$. On note également que la distribution est parfaitement symétrique, et mésokurtique (ou très légèrement platykurtique). La distribution normale pourrait servir de modèle dans ce cas.  De cette distribution, on peut déterminer la probabilité que dans ces conditions, une permutation produise une différence supérieure à 3, par exemple. On trouve alors:  
+
+```{r}
+#| code-fold: false
+
+pr <- mean(mdif > 3)
+
+```
+
+$$p(\Delta_{\bar{X}} > 3) = `r round(pr, 5)` $$
+
+En utilisant la distribution normale comme modèle, on trouve:
+
+```{r}
+#| code-fold: false
+
+pr2 <- pnorm(3, mean = mtot, sd = stot, lower.tail = FALSE)
+
+```
+
+$$p(\Delta_{\bar{X}} > 3) = `r round(pr2, 5)` $$
+
+Ces deux probabilités sont similaires.  
+
+Dans un contexte plus réaliste, la taille des échantillons utilisés dans une recherche quantitative implique un nombre de permutations astronomiques. Dans un tel cas, on ne pourra former qu'un certain nombre de permutations. Toutefois, si ce nombre est suffisamment élevé, on pourra obtenir une distribution suffisamment précise pour les besoins de l'analyse.  
+
+Reprenons la même expérience, mais en limitant à 100,000 le nombre de permutations générées. Ces permutations sont sélectionnées au hasard, parmi le $n!$ obtenues précédemment.
+
+```{r}
+subperm <- perm[sample(1:nrow(perm), 100000), ]
+
+mdif <- apply(subperm, 1, function(x) mean(x[1:5]) - mean(x[6:10]))
+
+msel <- mean(mdif)
+ssel <- sd(mdif, na.rm = TRUE)
+sksel <- moments::skewness(mdif)
+kusel <- moments::kurtosis(mdif)
+```
+
+$$\mu_{\Delta_{\bar{X}}}=`r msel` \qquad \sigma_{\Delta_{\bar{X}}}=`r round(ssel, 4)` \qquad Sk = `r sksel` \qquad Ku = `r round(kusel, 4)`$$
+
+```{r}
+#| label: fig-permdist2
+#| fig-cap: "Distribution des différences de moyennes obtenues pour une sélection aléatoire de 100,000 permutations formées des nombres de 1 à 10, les 5 premiers et les 5 derniers formant deux groupes indépendants."
+#| echo: false
+
+txt.sub <- paste("$\\mu_{\\Delta_{\\bar{X}}}=$", mean(msel))
+txt.main = "Distribution des $\\Delta_{\\bar{X}}$"
+hist(mdif, 
+     breaks = "FD",
+     xlab = NULL,
+     main = TeX(txt.main),
+     sub = TeX(txt.sub),
+     cex.sub = 1.5)
+
+```
+
+Les résultats obtenus ne sont pas très éloignés de ceux obtenus à partir de l'ensemble des permutations possibles.  La moyenne de la distribution est très près de 0.0, son écart-type est pratiquement égal à celui obtenu pour l'ensemble des permutations, et les indices de symétrie et de voussure vont dans le sens d'une distribution normale. Ce résultat valide l'utilisation du test de permutations pour la comparaison de deux moyennes indépendantes.
+
+#### Exemple numérique  
+
+Supposons deux échantillons indépendants tirés d'une population. La
+répartition des observations dans les deux groupes peut être considérée
+comme un parmi un très grand nombre d'arrangements possibles. Plutôt que
+de ré-échantillonner chacun des échantillons de manière indépendante, on
+peut combiner les données provenant des deux échantillons, et les
+redistribuer aléatoirement pour obtenir un nouvel arrangement. En
+répétant un grand nombre de fois ce processus, calculant la différence
+entre les estimateurs à chaque fois, on obtient la distribution
+d'échantillonnage nécessaire.
+
+Pour illustrer la procédure, considérons un ensemble de données générées aléatoirement à partir de paramètres eux-mêmes aléatoires. Les données résultantes sont analogues au tout premier exemple de
+ce chapitre, à la section @sec-exemple1a:
+
+
+```{r}
+#| code-fold: false
+
+set.seed(150752)
+
+mu1 <- runif(1, 20, 25)     # mu1 choisie au hasard entre 20 et 25
+x1 <- rnorm(n = 25, 
+            mean = mu1, 
+            sd = 8)         # Échantillon aléatoire tiré d'une distribution normale
+mu2 <- mu1 + runif(1, 1, 5) # mu2 égal à mu1 plus une quantité choisie au hasard
+x2 <- rnorm(n = 25, 
+            mean = mu2, 
+            sd = 8)         # Échantillon aléatoire tiré d'une distribution normale
+
+```
+
+
+De chacune des deux populations dont les paramètres sont inconnus, on
+tire un échantillon aléatoire. Les moyennes des deux populations et leur
+différence sont les paramètres que l'on tente d'estimer. Pour cet exemple, leurs valeurs
+sont en réalité les suivantes:
+
+```{r}
+#| echo: false
+
+m1 <- round(mu1, 3)
+m2 <- round(mu2, 3)
+diffm <- round(mu1 - mu2, 3)
+
+xb1 <- round(mean(x1), 3)
+sd1 <- round(sd(x1), 3)
+xb2 <- round(mean(x2), 3)
+sd2 <- round(sd(x2), 3)
+diffxb <- round(xb1 - xb2, 3)
+```
+
+**Paramètres**:\
+- $\mu_1 = `r m1`$\
+- $\mu_2 = `r m2`$\
+- $\mu_1 - \mu_2 = `r diffm`$
+
+Les estimateurs obtenus des deux échantillons sont les suivants:
+
+**Statistiques**:\
+- $\bar{X}_1 = `r xb1` \qquad s_{x1} = `r sd1`$\
+- $\bar{X}_2 = `r xb2`\qquad s_{x2} = `r sd2`$\
+- $\bar{X}_1 - \bar{X}_2 = `r diffxb`$
+
+En théorie, pour des échantillons **aléatoires** et **représentatifs** des populations d'où ils sont tirés, les statistiques observées devraient réfléter les paramètres correspondants.
+
+::: {.callout-caution title="Important!"}
+Encore une fois, les moyennes des deux populations sont affichées, mais
+uniquement dans un but de comparaisons avec les résultats des analyses à
+venir. Dans le monde réel, ces paramètres sont inconnues et sont de fait
+ce que l'on cherche à estimer.
+:::
+
+Un test de permutations permettra d'estimer et/ou de vérifier des hypothèses concernant les différences susceptibles d'exister entre les paramètres des deux populations. Pour rappel, ce test se déroule suivant les étapes suivantes:
+
+1.  Calcul de la différence de la statistique échantillonnale, entre les
+    deux groupes: on cherche la probabilité d'obtenir une telle valeur,
+    ou une valeur plus extrême...
+2.  Combinaison des deux groupes pour former un seul ensemble, composé
+    de $N = n_1 + n_2$ observations
+3.  Permutation de l'ensemble
+4.  Répartition aléatoire des observations dans les deux groupes, en respectant la
+    taille de chacun
+5.  Calcul des statistiques et de leur différence, que l'on collige
+6.  Retour à (2) et répéter un grand nombre de fois ($k$).
+7.  La distribution des différences observées est la distribution
+    d'échantillonnage dont on a besoin pour compléter le test. À la limite, lorsque $k\rightarrow \infty$, la moyenne de cette distribution est nulle.
+8.  Évaluation de la probabilité associée à la différence notée en (1), à partir de la distribution obtenue en (7)
+
+Le code R suivant permet d'effectuer ces étapes et les applique 100,000
+fois sur les données que nous venons de générer.
+
+```{r}
+#| code-fold: false
+
+g1 <- x1                                   # Observations, Groupe 1
+g2 <- x2                                   # Observations, Groupe 2
+N <- (n1 <- length(g1))+(n2 <- length(g2)) # Nombre total d'observations
+xt <- c(g1, g2)                            # Observations rassemblées
+nsig <- 0.05                               # Niveau de signification
+ns <- 100000                               # Nombre de permutations à effectuer
+
+calcDiff <- function(x1, x2, N) {
+  rd <- sample(xt, 
+               N, 
+               replace = FALSE)            # Permutation de l'ensemble des données
+  Grp1 <- rd[1:length(x1)]                 # Assignation des n1 premiers scores à Grp1
+  Grp2 <- rd[(length(x1) + 1):N]           # Assignation des n2 derniers scores à Grp2
+  mean_diff <- mean(Grp1) - mean(Grp2)     # Différence entre les 2 moyennes
+  return(mean_diff)
+}
+
+xbd <- replicate(ns, calcDiff(g1, g2, N))  # Répéter ns fois le processus
+
+```
+
+En exécutant ce code, on obtient un ensemble de 100,000 différences de
+moyennes, dont on peut examiner la distribution. La @fig-permut1 affiche
+ainsi la distribution d'échantillonnage des différences de moyennes
+résultant de ces opérations.
+
+
+```{r}
+#| label: fig-permut1
+#| fig-cap: "Distribution d'échantillonnage des différences de moyennes obtenue par un test de permutations. La différence observée entre les moyennes est représentée par un triangle vert sur l'axe horizontal. Le niveau de signification est \u03B1 = 0.05 (bilatéral)."
+#| echo: false
+
+obs_diff <- mean(g1) - mean(g2)
+p <- mean(abs(xbd) >= abs(obs_diff))
+txt1 <- paste("$\\bar{X}_1-\\bar{X}_2 = ", round(obs_diff, 3), "$")
+txt2 <- paste("$p = ", round(p, 3), "$")
+
+qtl <- quantile(xbd, 
+                      c(0.025, 0.975))
+h <- hist(xbd, breaks = "FD", plot = FALSE)
+breaks <- h$breaks
+counts <- h$counts
+
+left_tail <- which(breaks >= min(xbd) & breaks < qtl[1])
+right_tail <- which(breaks > qtl[2] & breaks <= max(xbd))
+
+cols <- rep("lightblue", length(breaks))
+cols[left_tail] <- "red"
+cols[right_tail] <- "red"
+
+hist(xbd, 
+     breaks = breaks, 
+     col = cols, 
+     border = "white", 
+     main = "Distribution d'échantillonnage\n des différences de moyennes", 
+     xlab = "Différences de moyennes")
+max_count <- max(h$counts)
+
+text(x = quantile(xbd, 0.001), y = max_count * 0.9, 
+     labels = TeX(txt1), adj = 0)
+text(x = quantile(xbd, 0.001), y = max_count * 0.8, 
+     labels = TeX(txt2), adj = 0)
+points(obs_diff, 0, pch = 17, col = "darkgreen", cex = 1.2)
+
+```
+
+Tel qu'attendu pour un test de permutations, la moyenne de la distribution est nulle. Les valeurs de $\Delta_{\bar{X}}$ comprises entre `r round(qtl[1], 3)` et `r round(qtl[2], 3)` sont probables, sous $H_0$. Et la différence observée est l'une d'entre elles. La probabilité d'obtenir une différence égale ou supérieure à celle qui est observée est:  
+
+```{r}
+#| eval: false
+#| code-fold: false
+
+obs_diff <- mean(g1) - mean(g2)
+p <- mean(abs(xbd) >= abs(obs_diff))
+```
+
+
+$$p(\Delta_{\bar{X}}>3) = `r round(p, 4)`$$
+
+Notons que cet exemple implique un test d'hypothèse bilatéral. En
+conséquence, on comptabilise les différences de moyennes en valeurs
+absolues pour le calcul de la probabilité recherchée \[p \<-
+mean(**abs(xbd)** \>= obs_diff)\].
+
+Les résultats indiquent que la différence observée entre les moyennes
+des deux échantillons est un événement
+`r ifelse(p<=0.05, "improbable", "probable")` . Ce résultat va
+`r ifelse(p<=0.05, "à l'encontre", "dans le sens")` de ce que propose
+$H_0$. On `r ifelse(p<=0.05, "peut", "ne peut pas")` rejeter cette
+hypothèse. La différence observée
+`r ifelse(p<=0.05, "reflète", "ne reflète pas")` une réalité au niveau
+de la population, et on la considère comme statistiquement
+`r ifelse(p<=0.05, "significative", "non significative")` .
+
+Analysons les mêmes données à l'aide de la fonction **boot.two.per()**
+de la librairie **wBoot**:
+
+```{r 08-Chap8-17}
+library(wBoot)
+b.moyDiff  <-  boot.two.per(g1, 
+                            g2, 
+                            mean, 
+                            stacked=FALSE, 
+                            null.hyp=0, 
+                            alternative="two.sided", 
+                            conf.level=0.95, 
+                            R=100000)
+print.boot.two(b.moyDiff)
+```
+
+L'histogramme illustrant la distribution résultant de la procédure est centré sur la différence observée entre les moyennes, ce qui permet d'obtenir l'intervalle de confiance de la différence des moyennes. Une différence nulle fait partie de cet intervalle, ce qui nous permet de tirer les mêmes conclusions que dans l'analyse précédente. 
+
+### Exemple 10: Test d'hypothèse pour deux moyennes indépendantes
+
+Peut-on affirmer que l'indice de Condition de Vie (CondxVie) moyen en
+Artibonite est différent de ce qu'on trouve dans le département du
+Centre?
+
+Cette question de recherche se traduit par les hypothèses statistiques
+suivantes:
+
+$$H_0:\mu_{Artibonite}-\mu_{Centre}=0$$
+$$H_1:\mu_{Artibonite}-\mu_{Centre}\ne 0$$
+
+Appliquons le test de permutations afin d'élucider la question. Nous
+disposons d'un échantillon de 25 sujets vivant en Artibonite et d'un
+échantillon de 30 sujets provenant du département du Centre. Le code R suivant génère les données, et en fournit une description.
+
+```{r}
+#| code-fold: false
+
+set.seed(150752)
+# Création des sous-populations
+subpop1  <-  subset(HaitiPop,(DEPARTEMENT=="1"),CondxVie)
+subpop2  <-  subset(HaitiPop,(DEPARTEMENT=="2"),CondxVie)
+
+# Création des échantillons
+nA  <-  25
+nC  <-  30
+xechA  <-  subpop1$CondxVie[sample(1:nrow(subpop1),nA,replace=FALSE)]
+xechC  <-  subpop2$CondxVie[sample(1:nrow(subpop2),nC,replace=FALSE)]
+MxechA  <-  mean(xechA)      # Moyenne (Artibonite)
+SxechA <- sd(xechA)          # Écart-type (Artibonite)
+MxechC  <-  mean(xechC)      # Moyenne (Centre)
+SxechC <- sd(xechC)          # Écart-type (Centre)
+moyDiff  <-  MxechA - MxechC # Différence entre les moyennes
+
+```
+
+```{r}
+#| echo: false
+
+xb1 <- round(MxechA, 3)
+sd1 <- round(SxechA, 3)
+xb2 <- round(MxechC, 3)
+sd2 <- round(SxechC, 3)
+diffxb <- round(moyDiff, 3)
+```
+
+**Statistiques**:\
+- $\bar{X}_{Art} = `r xb1` \qquad s_{Art} = `r sd1`$\
+- $\bar{X}_{Cen} = `r xb2`\qquad s_{Cen} = `r sd2`$\
+- $\bar{X}_{Art} - \bar{X}_{Cen} = `r diffxb`$
+
+En appliquant le test de permutations, on obtient les résultats
+suivants, illustrés à la @fig-permut2.
+
+```{r}
+g1 <- xechA
+g2 <- xechC
+N <- (n1 <- length(g1))+(n2 <- length(g2)) # Nombre total d'observations
+xt <- c(g1, g2)                            # Observations rassemblées
+nsig <- 0.05                               # Niveau de confiance
+ns <- 100000                               # Nombre de permutations à effectuer
+
+calcDiff <- function(x1, x2, N) {
+  rd <- sample(xt, N, replace = FALSE)     # Permutation
+  mean_diff <- mean(rd[1:length(x1)]) - mean(rd[(length(x1) + 1):N])  # Difference in means
+  return(mean_diff)
+}
+
+xbd <- replicate(ns, calcDiff(g1, g2, N))
+IClim <- quantile(xbd, c(0.025, 0.975))
+
+```
+
+**Paramètres de la distribution de ré-échantillonnage**:  
+
+$$\mu_{\bar{X_1}- \bar{X_2}} = `r round(mean(xbd), 3)` \qquad \sigma_{\bar{X_1}- \bar{X_2}} = `r round(sd(xbd), 3)`$$
+```{r }
+#| label: fig-permut2
+#| fig-cap: "Résultats d'un test de permutations et distribution d'échantillonnage des différences de moyennes. Les portions rouges de l'histogramme délimitent les zones de rejet de $H_0$, et le triangle vert sur l'axe horizontal indique la position de la différence observée entre les moyennes. Le niveau de signification est \u03B1 = 0.05"
+#| echo: false
+
+obs_diff <- xb1 - xb2
+p <- mean(abs(xbd) >= abs(obs_diff))
+txt1 <- paste("$\\bar{X}_1-\\bar{X}_2 = ", round(obs_diff, 3), "$")
+txt2 <- paste("$p = ", round(p, 3), "$")
+
+qtl <- quantile(xbd, 
+                      c(0.025, 0.975))
+h <- hist(xbd, breaks = "FD", plot = FALSE)
+breaks <- h$breaks
+counts <- h$counts
+
+left_tail <- which(breaks >= min(xbd) & breaks < qtl[1])
+right_tail <- which(breaks > qtl[2] & breaks <= max(xbd))
+
+cols <- rep("lightblue", length(breaks))
+cols[left_tail] <- "red"
+cols[right_tail] <- "red"
+
+hist(xbd, 
+     breaks = breaks, 
+     col = cols, 
+     border = "white", 
+     main = "Distribution d'échantillonnage\n des différences de moyennes", 
+     xlab = "Différences de moyennes")
+max_count <- max(h$counts)
+
+text(x = quantile(xbd, 0.001), y = max_count * 0.9, 
+     labels = TeX(txt1), adj = 0)
+text(x = quantile(xbd, 0.001), y = max_count * 0.8, 
+     labels = TeX(txt2), adj = 0)
+points(obs_diff, 0, pch = 17, col = "darkgreen", cex = 1.2)
+
+```
+
+**Probabilité d'une différence égale ou plus extrême que celle observée**:  
+
+$$p(|\bar{X_1}- \bar{X_2}| \ge `r round(diffxb, 3)`)=`r round(mean(xbd <= IClim[1] | xbd >= IClim[2]), 4)` $$
+**Intervalle de valeurs probables (95%)** et **Intervalle de confiance (95%)**:  
+
+
+Pour l'ensemble des différences de moyennes obtenu par le test de permutations, on peut considérer l'intervalle suivant:  
+
+$$C\left [`r round(IClim[1], 3)` \leq \bar{X}_1-\bar{X}_2 \leq `r round(IClim[2], 3)` \right ] = 95\% $$
+
+Notons que la moyenne de cette distribution s'approche de 0. L'intervalle contient les différences de moyennes probables pour les différentes permutations que l'on peut former à partir des données regroupées. Il ne permet donc pas d'estimer la différence entre les moyennes des deux populations. Cependant, on peut noter que la différence observée entre les deux moyennes se trouve à l'extérieur de cet intervalle, mettant en évidence qu'elle est peu probable.  Notons qu'il est également possible de centrer l'ensemble des différences de moyennes sur la différence observée, tel qu'énoncé dans l'équation @eq-moyDiffC.
+
+$$(\bar{X}_1-\bar{X}_2)_{(CENTRÉ)i}=(\bar{X}_1-\bar{X}_2)_i-\mu_{\bar{X}_1-\bar{X}_2}+(\bar{X}_1-\bar{X}_2)_{obs}$$ {#eq-moyDiffC}  
+
+Sous R, on applique les opérations suivantes:  
+
+```{r}
+#| code-fold: false
+
+xbdC <- xbd - mean(xbd) + diffxb # Données centrées sur la différence observée
+```
+
+On trouve alors:  
+
+```{r }
+#| label: fig-permutC
+#| fig-cap: "Résultats d'un test de permutations et distribution d'échantillonnage des différences de moyennes. Les différences sont centrées sur la différence observée entre les deux moyennes. Entre les portions rouges de l'histogramme, on retrouve l'intervalle de confiance (95%) de la différence entre les moyennes. Le triangle vert sur l'axe horizontal indique la position de la différence observée entre les moyennes."
+#| echo: false
+
+obs_diff <- diffxb
+qtl <- quantile(xbdC, 
+                c(0.025, 0.975))
+h <- hist(xbdC, 
+          breaks = "FD", 
+          plot = FALSE)
+breaks <- h$breaks
+counts <- h$counts
+maxf <- max(h$counts)
+txt <- paste("$C\\left [", round(qtl[1], 3), "\\leq \\mu_1-\\mu_2 \\leq ", round(qtl[2], 3), "\\right ]=95\\%$")
+txt1 <- paste("$\\bar{X}_1-\\bar{X}_2 =", round(diffxb, 3), "$")
+txt2 <- paste("$\\sigma_{\\bar{X}_1-\\bar{X}_2}=", round(sd(xbdC), 3), "$")
+left_tail <- which(breaks >= min(xbdC) & breaks < qtl[1])
+right_tail <- which(breaks > qtl[2] & breaks <= max(xbdC))
+
+cols <- rep("lightblue", length(breaks))
+cols[left_tail] <- "red"
+cols[right_tail] <- "red"
+
+hist(xbdC, 
+     breaks = breaks, 
+     col = cols, 
+     border = "white", 
+     main = "Distribution d'échantillonnage\n des différences de moyennes", 
+     sub = TeX(txt),
+     xlab = NULL,
+     cex.sub = 1.2)
+max_count <- max(h$counts)
+text(min(xbdC)+0.5, maxf-maxf/3, labels = TeX(txt1), pos = 4)
+text(min(xbdC)+0.5, maxf-maxf/2, labels = TeX(txt2), pos = 4)
+points(obs_diff, 0, pch = 17, col = "darkgreen", cex = 1.2)
+
+```
+
+Dans ce cas, on obtient l'intervalle de confiance de la différence de moyennes, tel que défini à la section @sec-exemple1a. On y constate qu'il exclut une différence nulle, telle que spécifiée dans $H_0$.
+
+**Test de signification**:  
+
+Les résultats indiquent que la différence observée entre les moyennes
+des deux échantillons est un événement
+`r if(p<=0.05){"improbable"}else{"probable"}` si $H_0$ est vraie. Ce résultat va
+`r if(p<=0.05){"à l'encontre"}else{"dans le sens"}` de ce que propose
+$H_0$. On `r if(p<=0.05){"peut"}else{"ne peut pas"}` rejeter cette
+hypothèse. La différence observée `r if(p<=0.05){"reflète"}else{"ne reflète pas"}` une réalité au niveau
+de la population, et on la considère comme statistiquement
+`r if(p<=0.05){"significative"}else{"non significative"}` .
+
+En utilisant la fonction **boot.two.per**, on obtient des résultats
+similaires, illustrés à la @fig-permut4. 
+
+```{r}
+#| label: fig-permut4
+#| fig-cap: "Test de permutations à l'aide de la fonction wBoot()"
+
+b.moyDiff = wBoot::boot.two.per(xechA, 
+                                xechC, 
+                                mean, 
+                                stacked=FALSE,
+                                null.hyp=0, 
+                                alternative="two.sided",
+                                conf.level=0.95, 
+                                R=100000)
+
+print.boot.two(b.moyDiff)
+```
+
+Les résultats sont analogues et conduisent aux mêmes conclusions.
+
+### Exemple 11: Test d'hypothèse pour deux variances indépendantes
+
+Certaines questions de recherche nécessitent la comparaison de
+variances. Est-ce que l'indice d'habileté cognitive (HabilCog) est plus
+homogène dans le département de l'Ouest qu'en Artibonite? Est-ce que
+l'indice de condition de vie est plus variable chez les femmes que chez
+les hommes?
+
+La comparaison de deux variances ne repose pas sur leur différence, mais
+plutôt sur leur rapport, que l'on nomme F (@eq-rF):
+
+$$
+F = \frac{s_1^2}{s_2^2}
+$$ {#eq-rF}
+
+Ce rapport prend toujours une valeur positive, puisqu'une variance ne
+peut qu'être positive. Si les deux variances sont égales, F = 1. 
+
+À titre d'exemple, comparons la variance de l'indice d'habileté
+cognitive (HabilCog) entre les résidents du département de l'Ouest et
+ceux d'Artibonite.
+
+a.  On forme un premier échantillon de 30 sujets en Artibonite, et un
+    échantillon de 25 sujets dans le département de l'Ouest.\
+b.  On calcule la variance pour chacun des échantillons\
+c.  On obtient le rapport F en divisant la plus grande variance par la
+    plus petite.\
+d.  En utilisant le test de permutations, on obtient un grand nombre de
+    rapports F, desquels on obtient la distribution d'échantillonnage de
+    ce rapport.\
+e.  La probabilité d'obtenir le rapport F observée initialement pour les
+    échantillons ou un rapport plus extrême est évaluée. Rappelons que
+    puisque la variance la plus élevée occupe le numérateur, on ne
+    s'occupera que de l'extrémité supérieure de la distribution.\
+f.  Une décision est prise quant au rejet ou non de $H_0$.
+
+Le code R suivant produit les échantillons nécessaires à l'exercice et en calcule les statistiques descriptives:
+
+```{r 08-Chap8-21}
+#| code-fold: false
+
+set.seed(15776542)
+# Création des sous-populations
+subpop1 = subset(HaitiPop,(DEPARTEMENT=="8"),HabilCog)
+subpop2 = subset(HaitiPop,(DEPARTEMENT=="1"),HabilCog)
+
+# Création des échantillons
+nO  <-  25
+nA <-  30
+xechO <-  subpop1$HabilCog[sample(1:nrow(subpop1),nO,replace=FALSE)]
+xechA <-  subpop2$HabilCog[sample(1:nrow(subpop2),nA,replace=FALSE)]
+MxechO <- mean(xechO)
+MxechA <- mean(xechA)
+VxechO <- var(xechO)
+VxechA <- var(xechA)
+RapF  <-  VxechO / VxechA
+
+xb1 <- round(MxechO, 3)
+sd1 <- round(VxechO^0.5, 3)
+xb2 <- round(MxechA, 3)
+sd2 <- round(VxechA^0.5, 3)
+F <- round(RapF, 3)
+```
+
+**Statistiques**:  
+* $\bar{X}_{Ouest} = `r xb1` \qquad s_{Ouest} = `r sd1`$\  
+
+* $\bar{X}_{Artib} = `r xb2`\qquad s_{Artib} = `r sd2`$\  
+
+* $F = \frac{s_{Ouest}^2}{s_{Artib}^2} = `r F`$  
+  
+Les hypothèses statistiques sont:
+
+$H_0:\frac{\sigma_{Ouest}^2}{\sigma_{Artibonite}^2}=1 \qquad H_1:\frac{\sigma_{Ouest}^2}{\sigma_{Artibonite}^2}>1$  
+
+Pour obtenir la distribution d'échantillonnage du rapport F, on peut
+utiliser soit le ré-échantillonnage, soit le test de permutation.
+
+1.  **Ré-échantillonnage**
+
+En ré-échantillonnant l'échantillon original 100,000 fois, on obtient
+les résultats résumés à la @fig-Freech.
+
+
+```{r}
+#| echo: false
+
+nsig <- 0.05          # Confidence level
+ns <- 100000           # Number of permutations
+
+xbd <- replicate(ns, {
+  x1 <- sample(xechO, nO, replace = TRUE) 
+  x2 <- sample(xechA, nA, replace = TRUE) 
+  v1 <- var(x1)
+  v2 <- var(x2)
+  v1/ v2
+})
+
+lims <- quantile(xbd, c(0.025, 0.975))
+p <- ifelse(RapF >= 1, mean(xbd <= 1.0), mean(xbd <= 1.0))
+
+
+```
+
+Après 100,000 ré-échantillonnages, on trouve que $`r round(p * 100, 2)`\%$ des rapports F ont une valeur égale ou plus extrême que $F=1.0$. L'égalité des variances est donc un événement `r ifelse(p<=0.05, "improbable", "probable")`. On peut donc conclure qu'il `r ifelse(p<=0.05, "y a ", "n'y a pas d'")`évidence pour qu'une différence existe entre les variances des populations des départements d'Artibonite et de l'Ouest, en ce qui concerne les habiletés cognitives. En d'autres termes, l'intervalle délimité par les percentiles $P_{2.5}$ et $P_{97.5}$ `r ifelse(p<=0.05, "ne contient pas", "contient")` $F=1.0$, ce qui confirme cette conclusion. La figure @fig-Freech illustre cette situation.
+
+
+```{r }
+#| label: fig-Freech
+#| fig-cap: "Distribution d'échantillonnage de F obtenue par ré-échantillonnage. Le rapport F observé est représenté par un triangle vert sur l'axe horizontal. Il s'agit de fait de la moyenne de la distribution. F=1.0 est représenté par un triangle orange, sur le même axe. Les extrémités de la distribution (en rouge) représentent les zones de rejet de $H_0$, pour $\alpha = 0.05$."
+#| echo: false
+
+obs_diff <- RapF
+qtl <- quantile(xbd, 
+                c(0.025, 0.975))
+h <- hist(xbd, 
+          breaks = "FD", 
+          plot = FALSE)
+breaks <- h$breaks
+counts <- h$counts
+maxf <- max(h$counts)
+ txt <- paste("$C\\left [", round(qtl[1], 3), "\\leq F=\\sigma_1^2/\\sigma_2^2 \\leq ", round(qtl[2], 3), "\\right ]=95\\%$")
+txt1 <- paste("$F_{Obs} =", round(obs_diff, 3), "$")
+txt2 <- paste("$\\sigma_{F}=", round(sd(xbd), 3), "$")
+left_tail <- which(breaks >= min(xbd) & breaks < qtl[1])
+right_tail <- which(breaks > qtl[2] & breaks <= max(xbd))
+
+cols <- rep("lightblue", length(breaks))
+cols[left_tail] <- "red"
+cols[right_tail] <- "red"
+
+hist(xbd, 
+     breaks = breaks, 
+     col = cols, 
+     border = "white", 
+     main = "Distribution d'échantillonnage\n des Rapports F", 
+     sub = TeX(txt),
+     xlab = NULL,
+     xlim = c(0, quantile(xbd, 0.99)),
+     cex.sub = 1.2)
+max_count <- max(h$counts)
+text(quantile(xbd, 0.85), maxf-maxf/3, labels = TeX(txt1), pos = 4)
+text(quantile(xbd, 0.85), maxf-maxf/2, labels = TeX(txt2), pos = 4)
+points(obs_diff, 0, pch = 17, col = "darkgreen", cex = 1.2)
+points(1.0, 0, pch = 17, col = "orange", cex = 1.2)
+
+```
+
+En bref, s'il y a égalité des variances, $F=1.0$. Cette valeur se trouve `r ifelse(p<=0.05, " à l'extérieur", " à l'intérieur")` de l'intervalle de confiance obtenu empiriquement et par conséquent, est jugée `r ifelse(p<=0.05, "improbable", "probable")`.  De plus, le rapport F observé est `r ifelse(RapF<1.0, "inférieur", "supérieur")`, ce qui indique que la variance observée dans le département `r ifelse(RapF<1.0, "de l'ouest", "d'Artibonite")` (numérateur du rapport F) est plus faible que celle observée dans le département `r ifelse(RapF<1.0, "d'Artibonite", "de l'Ouest")` (dénominateur du rapport F). On est donc amené à `r ifelse(p<=0.05, "rejeter", "retenir")` $H_0$, dans ce cas.
+
+2.  **Permutations**
+
+En utilisant le test de permutations tel que décrit à la section @sec-testHyp1, on obtient des résultats
+similaires, résumés dans la @fig-Fperm.
+
+```{r }
+#| code-fold: false
+
+# Test de permutation
+
+N  <- length(xechO) + length(xechA) # Nombre total d'observations
+xt <- c(xechO,xechA)                # Observations rassemblées
+nsig <- .05                         # Niveau de confiance
+ns <- 100000                        # Nombre de permutations à effectuer
+
+xbd <- replicate(ns, {
+  rd <- sample(xt, N, replace = FALSE)  # Permutations
+  v1 <- var(rd[1:length(xechO)])        # Variance du groupe 1
+  v2 <- var(rd[(length(xechO) + 1):N])  # Variance du groupe 2
+  v1 / v2             # Calcul du rapport F
+})
+
+lims <- quantile(xbd, c(0.025,0.975))
+p <- ifelse(RapF <= 1, mean(xbd <= RapF), mean(xbd >= RapF))
+
+```
+
+Cette fois, la distribution des rapports F obtenus pour l'ensemble des permutations est centrée sur $F=1.0$, la valeur indiquant l'égalité des deux variances.  En comptabilisant le nombre de rapports F égaux ou plus extrêmes que celui observé au niveau des échantillons, on obtient la probabilité d'obtenir $p(F|H_0\; vraie)$.  
+
+Après 100,000 permutations des données, on trouve que $`r round(p * 100, 2)`\%$ des rapports F ont une valeur égale ou plus extrême que le rapport F observé ($F_{obs}=`r F`$). Il `r ifelse(p<=0.05, "y a", "n'y a pas")` évidence pour qu'une différence existe entre les variances des populations des départements d'Artibonite et de l'Ouest, en ce qui concerne les habiletés cognitives. La figure @fig-Fperm illustre la situation.
+
+```{r}
+#| label: fig-Fperm
+#| fig-cap: "Distribution d'échantillonnage obtenue par le test de permutations. Le rapport F observé est indiqué par le triangle vert apparaissant sur l'axe horizontal. Les extrémités de la distribution, en rouge,  représentent les zones de rejet de $H_0$."
+#| echo: false
+
+obs_diff <- RapF
+qtl <- quantile(xbd, 
+                c(0.025, 0.975))
+h <- hist(xbd, 
+          breaks = "FD", 
+          plot = FALSE)
+breaks <- h$breaks
+counts <- h$counts
+maxf <- max(h$counts)
+ txt <- paste("$C\\left [", round(qtl[1], 3), "\\leq F=\\sigma_1^2/\\sigma_2^2 \\leq ", round(qtl[2], 3), "\\right ]=95\\%$")
+txt1 <- paste("$F_{Obs} =", round(obs_diff, 3), "$")
+txt2 <- paste("$\\sigma_{F}=", round(sd(xbd), 3), "$")
+left_tail <- which(breaks >= min(xbd) & breaks < qtl[1])
+right_tail <- which(breaks > qtl[2] & breaks <= max(xbd))
+
+cols <- rep("lightblue", length(breaks))
+cols[left_tail] <- "red"
+cols[right_tail] <- "red"
+
+hist(xbd, 
+     breaks = breaks, 
+     col = cols, 
+     border = "white", 
+     main = "Distribution d'échantillonnage\n des Rapports F", 
+     sub = TeX(txt),
+     xlab = NULL,
+     xlim = c(0, quantile(xbd, 0.99)),
+     cex.sub = 1.2)
+max_count <- max(h$counts)
+text(quantile(xbd, 0.85), maxf-maxf/3, labels = TeX(txt1), pos = 4)
+text(quantile(xbd, 0.85), maxf-maxf/2, labels = TeX(txt2), pos = 4)
+points(obs_diff, 0, pch = 17, col = "darkgreen", cex = 1.2)
+
+```
+
+
+Les résultats indiquent que la différence observée entre les variances
+de l'indice HabilCog dans le département de l'Ouest et d'Artibonite est
+un événement `r if(p<=0.05){"improbable"}else{"probable"}` (p = `r round(p, 4)`).
+Ce résultat va `r if(p<=0.05){"à l'encontre"}else{"dans le sens"}` de ce
+que propose $H_0$. On `r if(p<=0.05){"peut"}else{"ne peut pas"}` rejeter
+cette hypothèse. La différence observée
+`r if(p<=0.05){"reflète"}else{"ne reflète pas"}` une réalité au niveau
+de la population, et on la considère comme statistiquement
+`r if(p<=0.05){"significative"}else{"non significative"}` . Il
+`r if(p<=0.05){"y a "}else{"n'y a pas"}` évidence à l'effet que la
+variance de HabilCog est plus faible dans le département de l'Ouest
+qu'en Artibonite.
+
+
+### Exemple 12: Test d'hypothèse pour deux proportions indépendantes
+
+Peut-on affirmer que la proportion des adultes accordant leur confiance
+au Candidat A dans le département du Nord est supérieure à cette
+proportion dans le département de l'Ouest? On dispose d'un échantillon
+de 250 sujets dans le département du Nord, et de 325 sujets dans de
+département de l'Ouest pour examiner la question.
+
+```{r 08-Chap8-25}
+#| code-fold: false
+
+# Création des sous-populations
+subpopN = subset(HaitiPop,((DEPARTEMENT=="5")&(AGE>=18)),PrefPres)
+subpopO = subset(HaitiPop,((DEPARTEMENT=="8")&(AGE>=18)),PrefPres)
+
+# Création des échantillons
+nN = 250
+nO = 325
+xechN = subpopN$PrefPres[sample(1:nrow(subpopN),nN,replace=FALSE)]==1
+xechO = subpopO$PrefPres[sample(1:nrow(subpopO),nO,replace=FALSE)]==1
+pN <- mean(xechN)
+pO <- mean(xechO)
+
+```
+
+**Statistiques**:  
+
+* $p_{Nord} = `r round(pN, 3)`$  
+* $p_{Ouest} = `r round(pO, 3)`$  
+* $p_{Nord}-p_{Ouest} = `r round(pN-pO, 3)`$  
+  
+Les hypothèses statistiques sont:
+
+$H_0:\pi_{Nord}-\pi_{Ouest}=0 \qquad H_1:\pi_{Nord}-\pi_{Ouest}>0$
+
+On note une différence entre les proportions observées pour les
+échantillons. Mais est-ce que cette différence reflète une réalité au
+niveau des populations d'où proviennent ces échantillons, ou peut-on
+croire que la différence observée est le simple fait des fluctuations
+d'échantillonnage?  
+
+En utilisant la fonction **boot.two.per()**, de la librairie **wBoot**, on obtient les résultats suivants:  
+
+
+```{r 08-Chap8-26}
+#| code-fold: false
+
+b.Diff  <-  wBoot::boot.two.per(xechN, xechO,
+                                parameter=mean,
+                                null.hyp=0,
+                                alternative="greater",
+                                conf.level=0.95,
+                                R=100000,
+                                stacked=FALSE)
+wBoot::print.boot.two(b.Diff)
+
+```
+
+```{r}
+#| echo: false
+
+p  <-  b.Diff$p.value
+```
+
+
+Ces résultats indiquent que la différence observée entre les proportions
+de préférence pour le Candidat A dans le département du Nord et celui de
+l'Ouest est un événement `r if(p<=0.05){"improbable"}else{"probable"}`
+(p = `r round(b.Diff$p.value, 5)` ) . Ce résultat va
+`r if(p<=0.05){"à l'encontre"}else{"dans le sens"}` de ce que propose
+$H_0$. On `r if(p<=0.05){"peut"}else{"ne peut pas"}` rejeter cette
+hypothèse. La différence observée
+`r if(p<=0.05){"reflète"}else{"ne reflète pas"}` une réalité au niveau
+de la population, et on la considère comme statistiquement
+`r if(p<=0.05){"significative"}else{"non significative"}` . Il
+`r if(p<=0.05){"y a "}else{"n'y a pas"}` évidence voulant que la
+proportion d'appui au Candidat A soit plus élevée dans le département du
+Nord que dans celui de l'Ouest.
+
+### Exemple 13: Test d'hypothèse pour deux consensus
+
+Est-ce que le niveau de consensus concernant le projet d'une nouvelle
+Constitution au pays est différent lorsqu'on considère les populations
+des régions nordiques (départements du Nord-Est, du Nord et du
+Nord-Ouest) et l'ensemble des départements du Centre et de l'Ouest? On
+dispose d'un échantillon de 250 sujets dans les départements du Nord, et
+de 325 sujets dans les départements du Centre et de l'Ouest pour
+examiner cette question.
+
+```{r}
+#| code-fold: false
+#| message: false
+
+cons = function(x){
+  tbl = table(x)
+  cns = agrmt::consensus(tbl)
+  return(cns)
+}
+
+subpopN = subset(HaitiPop,((DEPARTEMENT %in% c("5","6","7"))&(AGE>=18)),OpinConst)
+subpopO = subset(HaitiPop,((DEPARTEMENT %in% c("2","8"))&(AGE>=18)),OpinConst)
+
+nN = 250
+nO = 325
+xechN = subpopN$OpinConst[sample(1:nrow(subpopN),nN,replace=FALSE)]==1
+xechO = subpopO$OpinConst[sample(1:nrow(subpopO),nO,replace=FALSE)]==1
+cN <- cons(xechN)
+cO <- cons(xechO)
+```
+
+
+**Statistiques**:  
+
+* $CNS_{Nord} = `r round(cN, 3)`$  
+* $CNS_{Ouest} = `r round(cO, 3)`$  
+* $CNS_{Nord}-CNS_{Ouest} = `r round(cN-cO, 3)`$  
+
+On note une différence entre les consensus observés au niveau des
+échantillons. Mais est-ce que cette différence reflète une réalité au
+niveau des populations d'où proviennent ces échantillons, ou peut-on
+croire que la différence observée est le simple fait des fluctuations
+d'échantillonnage?
+
+Les hypothèses statistiques sont:
+
+$H_0:CNS_{Nord}-CNS_{Ouest}= 0$
+
+$H_0:CNS_{Nord}-CNS_{Ouest}\neq 0$
+
+
+```{r 08-Chap8-28}
+#| code-fold: false
+
+b.Diff = wBoot::boot.two.per(xechN,xechO,
+                    parameter=cons,
+                    null.hyp=0,
+                    alternative="two.sided",
+                    conf.level=0.95,
+                    R=100000,
+                    stacked=FALSE)
+wBoot::print.boot.two(b.Diff)
+p = b.Diff$p.value
+```
+
+Les résultats indiquent que la différence observée entre les niveaux de
+consensus diffèrent entre les régions nordiques et le groupe formé des
+départements du Centre et de l'Ouest est un événement
+`r if(p<=0.05){"improbable"}else{"probable"}` (p = `r b.Diff$p.value` )
+. Ce résultat va `r if(p<=0.05){"à l'encontre"}else{"dans le sens"}` de
+ce que propose $H_0$. On `r if(p<=0.05){"peut"}else{"ne peut pas"}`
+rejeter cette hypothèse. La différence observée
+`r if(p<=0.05){"reflète"}else{"ne reflète pas"}` une réalité au niveau
+de la population, et on la considère comme statistiquement
+`r if(p<=0.05){"significative"}else{"non significative"}` . Il
+`r if(p<=0.05){"y a "}else{"n'y a pas"}` évidence voulant que le niveau
+de consensus dans la population nordique diffère de celui de l'ensemble
+composé des départements du Centre et de l'Ouest.
+
+### Exemple 14: Test d'hypothèse pour Rapport de Variation
+
+On se souviendra qu'une mesure de dispersion pour variables nominales
+est donnée par la proportion des observations qui ne font pas partie de
+la catégorie modale. Il s'agit d'une quantité qui, étant obtenue d'un
+échantillon, peut servir d'estimateur du paramètre correspondant de la
+population.
+
+Posons la question de recherche suivante: '**Est-ce que le rapport de
+variation de la distribution des appuis aux différents candidats à la
+présidence diffère entre les trois départements du nord et les quatre
+départements du sud?**'
+
+Le code R suivant permettra, dans un premier temps, d'obtenir les
+échantillons nécessaires, et ensuite, de vérifier l'hypothèse d'égalité
+dans le RV des deux régions du pays. Il nous est permis d'utiliser un
+échantillon de 400 sujets dans les régions du Nord, et de 350 sujets
+dans les régions du sud. Le code R suivant génère les données et calcule les statistiques requises:
+
+```{r 08-Chap8-29}
+#| code-fold: false
+
+subpopN = subset(HaitiPop,((DEPARTEMENT %in% c("5","6","7"))&(AGE>=18)),PrefPres)
+subpopS = subset(HaitiPop,((DEPARTEMENT %in% c("3","4","9","10"))&(AGE>=18)),PrefPres)
+
+nN <- 400
+nS <- 350
+xechN <- subpopN$PrefPres[sample(1:nrow(subpopN),nN,replace=FALSE)]
+xechS <- subpopS$PrefPres[sample(1:nrow(subpopS),nS,replace=FALSE)]
+RVech <- rvDiff(xechN,xechS)
+
+```
+
+
+**Statistiques**:
+
+* $RV_{Nord} = `r round(RVech[[1]], 3)`$  
+* $RV_{Sud} = `r round(RVech[[2]], 3)`$  
+* $RV_{Nord}-RV_{Sud} = `r round(RVech[[3]], 3)`$  
+
+Les hypothèses statistiques sont:
+
+$H_0:RV_{Nord}-RV_{Sud}=0 \qquad H_0:RV_{Nord}-RV_{Sud}\neq 0$
+
+On note une différence entre les Rapports de Variation au niveau des
+échantillons. Mais est-ce que cette différence reflète une réalité au
+niveau des populations d'où proviennent ces échantillons, ou peut-on
+croire que la différence observée est le simple fait des fluctuations
+d'échantillonnage?
+
+Pour répondre à cette question, procédons au test de permutations (100,000 réplications) :
+
+```{r}
+g1 <- xechN
+g2 <- xechS
+N <- (n1 <- length(g1))+(n2 <- length(g2)) # Nombre total d'observations
+xt <- c(g1, g2)                            # Observations rassemblées
+nsig <- 0.05                               # Niveau de confiance
+ns <- 100000                               # Nombre de permutations à effectuer
+
+calcDiff <- function(x1, x2, N) {
+  rd <- sample(xt, N, replace = FALSE)     # Permutation
+  RV_diff <- rvDiff(rd[1:length(x1)], rd[(length(x1) + 1):N])  # Difference in means
+  return(RV_diff[[3]])
+}
+
+xbd <- replicate(ns, calcDiff(g1, g2, N))
+IClim <- quantile(xbd, c(0.025, 0.975))
+
+```
+
+```{r}
+#| label: fig-RVdiff
+#| fig-cap: "Résultats d'un test de permutations et distribution d'échantillonnage des différences de Rapports de Variation. Les portions rouges du diagramme délimitent les zones de rejet de $H_0$, et le triangle vert sur l'axe horizontal indique la position de la différence observée entre les RVs. Le niveau de signification est \u03B1 = 0.05"
+#| echo: false
+
+obs_diff <- RVech[[3]]
+p <- mean(abs(xbd) >= abs(obs_diff))
+txt1 <- paste("$RV_1-RV_2 = ", round(obs_diff, 3), "$")
+txt2 <- paste("$p = ", round(p, 3), "$")
+
+qtl <- quantile(xbd, 
+                      c(0.025, 0.975))
+h <- hist(xbd, breaks = "FD", plot = FALSE)
+breaks <- h$breaks
+counts <- h$counts
+
+left_tail <- which(breaks >= min(xbd) & breaks < qtl[1])
+right_tail <- which(breaks > qtl[2] & breaks <= max(xbd))
+
+cols <- rep("lightblue", length(breaks))
+cols[left_tail] <- "red"
+cols[right_tail] <- "red"
+
+hist(xbd, 
+     breaks = breaks, 
+     col = cols, 
+     border = "white", 
+     main = "Distribution d'échantillonnage des différences \n de Rapports de Variation (RV)", 
+     xlab = TeX("$\\Delta_{RV}$"))
+max_count <- max(h$counts)
+
+text(x = quantile(xbd, 0.001), y = max_count * 0.9, 
+     labels = TeX(txt1), adj = 0)
+text(x = quantile(xbd, 0.001), y = max_count * 0.8, 
+     labels = TeX(txt2), adj = 0)
+points(obs_diff, 0, pch = 17, col = "darkgreen", cex = 1.2)
+```
+La différence observée entre les deux rapports de variation ($\Delta_{RV}=`r round(obs_diff, 4)`$) se trouve largement en dehors de l'intervalle des valeurs probables sous $H_0$. Une telle différence est par conséquent peu probable et nous amène à rejeter $H_0$.  
+On obtient des résultats similaires à l'aide de la fonction **boot.two.per()**. Dans ce cas, il est nécessaire de définir une fonction (@lst-RV) pour calculer le rapport de variation (**parameter = RV**). On obtient alors les résultats suivants:
+
+```{r}
+#| label: fig-RV
+#| fig-cap: "Distribution de ré-échantillonnage des Rapports de Variation"
+#| echo: false
+#| code-fold: false
+
+b.Diff = wBoot::boot.two.per(xechN, xechS,
+                    parameter=RV,
+                    null.hyp=0,
+                    alternative="two.sided",
+                    conf.level=0.95,
+                    R=100000,
+                    stacked=FALSE)
+wBoot::print.boot.two(b.Diff)
+p = b.Diff$p.value
+```
+
+L'intervalle de confiance pour la différence de rapports de variation est:
+
+$$C[`r round(b.Diff$Confidence.limits[1],3)`\le RV \le `r round(b.Diff$Confidence.limits[2],3)`] = 95\%$$
+
+Cet intervalle exclut une différence nulle, justifiant le rejet de $H_0$.
+
+Plus formellement, les résultats indiquent que la différence observée entre les Rapports de
+Variation dans les départements du Nord et dans les départements du Sud
+est un événement `r if(p<=0.05){"improbable"}else{"probable"}` (p =
+`r p` ) . Ce résultat va `r if(p<=0.05){"à l'encontre"}else{"dans le sens"}` de ce que
+propose $H_0$. On `r if(p<=0.05){"peut"}else{"ne peut pas"}` rejeter
+cette hypothèse. La différence observée
+`r if(p<=0.05){"reflète"}else{"ne reflète pas"}` une réalité au
+niveau de la population, et on la considère comme statistiquement
+`r if(p<=0.05){"significative"}else{"non significative"}` . Il
+`r if(p<=0.05){"y a "}else{"n'y a pas"}` évidence voulant que les
+rapports de variations dans les deux pôles du pays soient différents
+l'un de l'autre.
+
+## Test d'hypothèse pour groupes indépendants: Approche théorique
+
+Les distributions d'échantillonnage théoriques qui ont permis
+l'estimation de différences de moyennes (que les écarts-types des
+populations soient connus ou non), de variances ou de proportions seront
+à nouveau utilisées dans un contexte de vérification d'hypothèse.
+
+### Exemple 15: Test d'hypothèse pour deux moyennes indépendantes, $\sigma_1$ et $\sigma_2$ connus
+
+Reprenons l'exemple 10 afin d'illustrer un test d'hypothèse concernant
+la différence entre deux moyennes indépendantes, pour de grands
+échantillons, ou lorsque les écarts-types des populations d'où sont
+tirés ces échantillons sont connus.
+
+Peut-on affirmer que l'indice de Condition de Vie (CondxVie) moyen en
+Artibonite est différent de ce qu'on trouve dans le département du
+Centre?
+
+Cette question de recherche se traduit par les hypothèses statistiques
+suivantes:
+
+$$H_0:\mu_{Artibonite}-\mu_{Centre}=0$$
+$$H_1:\mu_{Artibonite}-\mu_{Centre}\ne 0$$
+
+On sait que la distribution d'échantillonnage nécessaire à la
+vérification de $H_0$ est de nature gaussienne, et que sa moyenne
+$(\mu_{\bar X_1-\bar X_2})$ est égale à la différence des moyennes au
+niveau des populations $(\mu_1-\mu_2)$. On sait également que
+l'erreur-standard des différences de moyennes est:
+
+$$\sigma_{\bar X_1-\bar X_2}=\sqrt{\frac{\sigma_1^2}{n_1} +\frac{\sigma_2^2}{n_2}}$$ {#eq-SEdiffMoy}
+
+La procédure consiste donc à obtenir la statistique échantillonnale (la
+différence entre les moyennes des échantillons), d'évaluer la distance
+standardisée qui sépare cette statistique du paramètre de la population
+tel que spécifié dans $H_0$, pour finalement calculer la probabilité de
+cet événement ou d'un événement plus extrême.
+
+Générons un échantillon aléatoire de chacun des départements concernés:
+
+
+```{r}
+#| code-fold: false
+
+# Création des sous-populations
+subpop1  <-  subset(HaitiPop,(DEPARTEMENT=="1"),CondxVie)
+subpop2  <-  subset(HaitiPop,(DEPARTEMENT=="2"),CondxVie)
+
+# Création des échantillons
+nA  <-  25
+nC  <-  30
+xechA  <-  subpop1$CondxVie[sample(1:nrow(subpop1),nA,replace=FALSE)]
+xechC  <-  subpop2$CondxVie[sample(1:nrow(subpop2),nC,replace=FALSE)]
+MxechA  <-  mean(xechA)
+SxechA <- sd(xechA)
+MxechC  <-  mean(xechC)
+SxechC <- sd(xechC)
+moyDiff  <-  MxechA - MxechC
+sig1 <- sd(subpop1$CondxVie)
+sig2 <- sd(subpop2$CondxVie)
+
+```
+
+```{r}
+#| echo: false
+
+xb1 <- round(MxechA, 3)
+sd1 <- round(SxechA, 3)
+xb2 <- round(MxechC, 3)
+sd2 <- round(SxechC, 3)
+diffxb <- round(moyDiff, 3)
+```
+  
+
+**Statistiques**:\
+- $\bar{X}_{Art} = `r xb1` \qquad s_{Art} = `r sd1`$\
+- $\bar{X}_{Cen} = `r xb2`\qquad s_{Cen} = `r sd2`$\
+- $\bar{X}_Art{} - \bar{X}_{Cen} = `r diffxb`$
+
+Pour les besoins de la discussion, on a obtenu les écarts-types des deux
+populations. Cependant, dans le monde réel, ces quantités ne sont pas
+connues et on doit les estimer à partir des données échantillonnales.
+Donc, le Bureau des Statistiques ont certifié que:
+
+-   $\sigma_{Art} = `r round(sig1,3) `$
+-   $\sigma_{Cen} = `r round(sig2,3) `$
+
+De ces résultats, on obtient l'erreur-standard des différences de
+moyennes:
+
+```{r echo=FALSE}
+sedm <- sqrt(sig1^2/nA + sig2^2/nC) 
+z <- (MxechA - MxechC) / sedm
+```
+
+$$\sigma_{\bar X_1-\bar X_2}=\sqrt{\frac{\sigma_1^2}{n_1} +\frac{\sigma_2^2}{n_2}}= \sqrt{\frac{`r round(sig1, 3)`^2}{`r nA`} +\frac{`r round(sig2, 3)`^2}{`r nC`}}=`r round(sedm, 3)`$$
+La statistique de vérification devient alors:
+
+$$Z=\frac {(\bar X_{Artibonite}-\bar X_{Centre})-(\mu_{Artibonite}-\mu_{Centre})}{\sigma_{\bar X_{Artibonite}-\bar X_{Centre}}} = \frac {(`r round(moyDiff, 3)`)-0}{`r round(sedm, 3)`}=`r round(z, 3)`$$
+
+La distribution normale servant de modèle dans cette situation, la
+probabilité d'obtenir $Z \ge `r round(z, 3)`$ **si** $H_0$ est vraie,
+est:
+
+```{r}
+#| echo: false
+lower.tail <- ifelse(z < 0, TRUE, FALSE)
+pr <- pnorm(z, lower.tail) 
+```
+
+$$p_{(|z|\ge `r round(z, 3)`)}= `r round(pr, 3)` $$
+
+```{r echo=FALSE, eval=FALSE}
+stdDev <- sedm;
+x <- seq(-3,3,by=0.01)
+y <- dnorm(x,sd=stdDev)
+right <- qnorm(0.95,sd=stdDev)
+left <- qnorm(0.05,sd=stdDev)
+plot(x, y, type="l",
+     xaxt="n",ylab="Probabilité",
+     xlab=expression(paste('Distribution des ',bar(x),' supposant  ', H[0],'  vraie')),
+     axes=FALSE,
+     ylim=c(0,max(y)*1.05),
+     xlim=c(min(x),max(x)),
+     frame.plot=FALSE)
+axis(1,at=c(-3,right,0,3),
+     pos = c(0,0),
+     labels=c(expression(''),
+              expression(bar(x)[A]-bar(x)[C]),
+              expression(mu[A]-mu[C]),
+              expression('')))
+axis(2)
+xReject <- c(seq(-3,3,by=0.01))
+yReject <- dnorm(xReject,sd=stdDev)
+yReject[xReject > left & xReject < right] <- 0
+polygon(c(xReject,xReject[length(xReject)],xReject[1]),
+        c(yReject,0, 0), col='red')
+legend("topleft", paste("p = ", round(pr, 4)))
+```
+
+Ces résultats indiquent que la probabilité d'obtenir une différence
+telle que $\bar X_{Artibonite}-\bar X_{Centre} = `r round(moyDiff, 3)`$
+est `r ifelse(pr<0.025, " inférieure ", " supérieure ")` au niveau de
+signification $\alpha=0.05$, supposant  que $H_0$ est vraie. De ce fait, on
+`r ifelse(pr<0.025, " rejette ", " ne rejette pas ")` $H_0$. Nous
+`r ifelse(pr>0.025, " n'avons pas suffisamment d'évidence ", " avons des évidences ")`
+voulant qu'il y ait une différence de l'indice de condition de vie moyen
+entre les départements d'Artibonite et du Centre.
+
+Ces résultats vont dans le même sens que ceux obtenus de manière
+empirique.
+
+### Exemple 16: Test d'hypothèse pour deux moyennes indépendantes, $\sigma_1$ et $\sigma_2$ inconnus, petits échantillons
+
+Considérons maintenant que les écarts-types des populations d'où sont
+tirés les échantillons ne sont pas connus. On doit donc les estimer à
+partir des données échantillonnales. En conséquence, compte tenu du fait
+que dans une telle situation la dispersion des populations est
+sous-estimée, la distribution de Student est le modèle le plus approprié
+pour le calcul des probabilités requises pour le test d'hypothèse. De
+plus, l'erreur-standard des différences de moyennes s'obtient en
+combinant les variances des deux échantillons.
+
+Pour les données de l'exemple précédent, les statistiques descriptives calculées pour chaque échantillon sont les suivantes:
+
+```{r}
+#| echo: false
+varA <- var(xechA)
+varC <- var(xechC)
+```
+
+**Statistiques**:\
+- $\bar{X}_{Art} = `r xb1` \qquad s_{Art} = `r sd1`  \qquad s_{Art}^2 = `r round(varA, 3)`$\
+- $\bar{X}_{Cen} = `r xb2`\qquad s_{Cen} = `r sd2`  \qquad s_{Cen}^2 = `r round(varC, 3)`$\
+- $\bar{X}_Art{} - \bar{X}_{Cen} = `r diffxb`$
+
+De manière à obtenir une meilleure estimation de la dispersion des données au niveau de la population, on obtient une combinaison pondérée des variances:
+
+```{r echo=FALSE}
+s2c <- ((nA-1)*varA+(nC-1)*varC)/( nA + nC - 2)
+```
+
+$$s_C^2=\frac{(n_1-1)s_1^2+(n_2-1)s_2^2}{n_1+n_2-2}=\frac{(`r nA` -1)(`r round(varA, 3)`) + (`r nC`-1)`r round(varC, 3)`)}{`r nA`+`r nC`-2}=`r round(s2c, 3)` $$
+
+Cette quantité  permet une estimation de l'erreur-standard des différences de moyennes:
+
+```{r echo=FALSE}
+sedm <- sqrt(sum(s2c/c(nA, nC)))
+```
+
+$$s_{\bar X_1-\bar X_2}=\sqrt{\frac{s_A^2}{n_A}+\frac{s_C^2}{n_C}}= \sqrt{\frac{`r round(s2c,3)`}{`r nA`}+\frac{`r round(s2c,3)`}{`r nC`}}=`r sedm`$$  
+
+Finalement, la statistique $t$ évalue la distance séparant la différence
+observée entre les moyennes ($\bar X_{Artibonite}-\bar X_{Centre}$) et
+la différence postulée au niveau des populations
+($\mu_{Artibonite}-\mu_{Centre}$), tenant compte de la dispersion sous
+la distribution de Student:
+
+```{r echo=FALSE}
+t <- moyDiff / sedm
+dl <- nA + nC - 2
+```
+
+$$t=\frac {(\bar X_{Art}-\bar X_{Cen})-(\mu_{Art}-\mu_{Cen})}{s_{\bar X_{Art}-\bar X_{Cen}}} =\frac {(`r round(moyDiff, 3)`)-0}{`r round(sedm, 3)`}=`r round(t, 3)`$$
+
+Dans le présent contexte, le nombre de degrés de liberté est
+$dl=n_{Art}+n_{Cen}-2 = `r dl`$. La probabilité d'obtenir un
+tel résultat ou une valeur plus extrême, **si $H_0$ est vraie**
+est:
+
+```{r}
+#| echo: false
+
+lower.tail <- ifelse(t < 0, TRUE, FALSE)
+pr <- pt(t, dl, lower.tail)
+```
+
+$$p_{(t_{(\alpha=0.05;dl= `r dl`)} \ge `r round(abs(t), 3)`)} = `r round(pr, 3)` $$
+
+Sous R, la fonction **t.test()** effectue toutes les opérations décrites
+dans cette section. Pour le présent exemple, le tout se résume à la
+commande suivante:
+
+```{r Chap8-T-Test}
+#| code-fold: false
+
+res <- t.test(xechA, xechC, 
+       alternative="two.sided", 
+       mu=0, 
+       var.equal=TRUE, 
+       conf.level=0.95)
+res
+```
+
+```{r}
+#| echo: false
+pr <- res$p.value
+```
+
+La sortie de cette fonction reproduit les éléments suivants:
+
+-   **data: xechA and xechC** : Variables contenant les données
+    échantillonnales
+-   **t = -1.7092, df = 53, p-value = 0.09327** : Résultats du test-t.
+    L'aire totale dans les extrémités correspond à la probabilité
+    d'obtenir ce résultat, si $H_0$ est vraie.
+-   **alternative hypothesis: true difference in means is not equal to
+    0** : Nature de l'hypothèse alternative (directionalité)
+-   **95 percent confidence interval**: Intervalle de confiance de la
+    différence entre les moyennes\
+    **-2.3914318 0.1909107**
+-   **sample estimates**: Statistiques échantillonnales (moyennes)\
+    **mean of x mean of y** **4.376404 5.476665**
+
+```{r}
+#| echo: false
+
+dl <- res$parameter
+t <- res$statistic
+
+```
+
+
+Ces résultats indiquent que la distance standardisée séparant la différence de moyennes observée est, pour $dl=`r dl`$, $t=`round(t, 3)`$. Si $H0$ est vraie, la probabilité d'observer cette valeur, ou une valeur plus extrême est $p = `r round(pr, 3)`$. Dans ce cas,  on `r ifelse(pr<0.025, " rejette ", " ne rejette pas ")` $H_0$. Nous `r ifelse(pr>0.025, " n'avons pas suffisamment d'évidence ", " avons des évidences ")` suggérant qu'il y ait une différence de l'indice de condition de vie moyen
+entre les départements d'Artibonite et du Centre. 
+
+La situation est illustrée et résumée dans la @fig-tdist1, obtenue à l'aide de la fonction  **t.Distr()** (@lst-tDistr):
+
+```{r}
+#| label: fig-tdist1
+#| fig-cap: "Distribution de Student: Exemple 16"
+#| echo: false
+
+t.Distr(res$statistic, # Valeur de t
+        res$parameter, # Nombre de degrés de liberté
+        alpha=0.05,    # Niveau de signification
+        h1=0)          # Directionalité du test [-1, 0 ou 1]
+
+```
+
+
+Notons qu'un test unilatéral aurait conduit à des résultats différents.
+Par exemple, pour les hypothèses:
+
+$$H_0:\mu_{Art}-\mu_{Cen}=0 \qquad H_1:\mu_{Art}-\mu_{Cen}< 0$$
+
+Dans ce cas, la valeur de $t$ ne change pas, mais l'ensemble de la zone
+de rejet se retrouve à gauche de la distribution, composant 5% de la
+distribution:
+
+```{r}
+#| code-fold: false
+
+res <- t.test(xechA, xechC, 
+       alternative="less", 
+       mu=0, 
+       var.equal=TRUE,        # variances combinées
+       conf.level=0.95)
+res
+```
+
+```{r}
+#| label: fig-tdist2
+#| echo: false
+#| fig-cap: "Distribution de Student illustrant une hypothèse unilatérale gauche, pour l'exemple 16"
+
+t.Distr(res$statistic, 
+        res$parameter, 
+        alpha=0.05, 
+        h1=-1)
+
+```
+
+
+Cette fois, la probabilité du $t$ observé ou des valeurs plus extrêmes
+est inférieure au niveau de signification $\alpha=0.05$. On peut donc
+conclure que l'indice de condition de vie moyen est plus faible en
+Artibonite que dans le département du Centre.
+
+#### Postulats
+
+La comparaison de moyennes indépendantes requiert le respect des
+postulats suivants:  
+  
+* Les populations d'où sont tirés les échantillons
+sont distribuées normalement  
+* Les observations sont indépendantes les unes des autres, à la fois à l'intérieur des groupes, et entre ces mêmes
+groupes  
+* Les variances des populations d'où sont tirés les échantillons sont homogènes (égales)  
+  
+Lorsque les variances sont hétérogènes (ce qu'on peut vérifier avec une
+comparaison de variances indépendantes), il convient d'apporter une
+correction. Cette correction implique une redéfinition du nombre de
+degrés de liberté, qui diminuera en fonction de la différence entre les
+variances. Formellement, le nombre de degrés de liberté devient (@eq-dlprime):
+
+$$dl'=\frac{{{\left( \frac{s_{1}^{2}}{{{n}_{1}}}+\frac{s_{2}^{2}}{{{n}_{2}}} \right)}^{2}}}{\frac{{{\left( \frac{s_{1}^{2}}{{{n}_{1}}} \right)}^{2}}}{{{n}_{1}}-1}+\frac{{{\left( \frac{s_{2}^{2}}{{{n}_{2}}} \right)}^{2}}}{{{n}_{2}}-1}}$$ {#eq-dlprime}
+
+Cette correction se traduit donc par une diminution du nombre de degrés
+de liberté et par conséquent augmente la dispersion de la distribution
+de Student. Les valeurs de $t$ délimitant les zones de rejet de $H_0$
+augmentent et il devient plus difficile de rejeter cette hypothèse.
+L'ensemble de la procédure porte le nom de **test de Welch**. Il est
+identique au test $t$, sauf en ce qui concerne $dl$. Sous R, il suffit
+de spécifier l'argument **var.equal=FALSE** de la fonction **t.test()**:
+
+```{r}
+#| code-fold: false
+
+res <- t.test(xechA, xechC, 
+       alternative="less", 
+       mu=0, 
+       var.equal=FALSE,      # Test de Welch
+       conf.level=0.95)
+res
+```
+
+```{r}
+#| echo: false
+
+respar <- round(res$parameter, 3)
+```
+
+
+Le nombre de degrés de liberté corrigés est
+$dl= `r respar`$, une très légère réduction qui dans
+les faits n'affecte que très peu la probabilité associée au $t$ observé.
+Les résultats sont semblables aux précédents parce qu'au départ, les
+variances sont relativement homogènes. La différence aurait été plus
+prononcée pour des variances réellement hétérogènes.
+
+Pour fin de comparaison, les probabilités calculées avant et après
+correction sont:
+
+```{r}
+#| echo: false
+
+dir <- ifelse(res$statistic < 0, TRUE, FALSE)
+pr1 <- pt(res$statistic, 
+          nA+nC-2, 
+          lower.tail = dir)
+pr2 <- pt(res$statistic, 
+          res$parameter, 
+          lower.tail = dir)
+
+```
+
+* $P_{Avant}= `r pr1`$  
+* $P_{Après}= `r pr2`$  
+
+Dans ce cas précis, la différence est négligeable et ne change en rien
+la conclusion du test d'hypothèse.
+
+Lorsque l'écart entre les variances s'agrandit, les résultats peuvent en
+être affectés de manière plus importante. Considérons des échantillons
+de taille $n=10$, le premier étant tiré d'une population caractérisée
+par $(\mu=50,~~\sigma=4)$, et le second d'une population caractérisée par 
+$(\mu=51,~~\sigma=16)$:
+
+```{r}
+#| code-fold: false
+
+set.seed(071552)
+x1 <- rnorm(10, 50, 4)
+x2 <- rnorm(10, 51, 16)
+```
+
+En appliquant un test $t$ en considérant que les variances sont homogènes (**var.equal = TRUE**) et hétérogènes (**var.equal = FALSE**), on trouve:
+
+```{r }
+#| code-fold: false
+
+res1 <- t.test(x1, x2, 
+               alternative="less",
+               mu=0, 
+               var.equal=TRUE, 
+               conf.level=0.95)
+res2 <- t.test(x1, x2, 
+               alternative="less", 
+               mu=0, 
+               var.equal=FALSE, 
+               conf.level=0.95)
+```
+
+-   $dl$ calculé en supposant des variances égales : `r res1$parameter`
+-   $dl$ calculé en supposant des variances inégales:
+    `r round(res2$parameter, 3)`
+
+Les valeurs critiques délimitant la zone de rejet pour une hypothèse
+directionnelle à gauche et $\alpha=0.05$ sont:
+
+-   Variances supposées égales :
+    `r round(qt(0.95, res1$parameter, lower.tail=FALSE), 3)`
+-   Variances supposées inégales:
+    `r round(qt(0.95, res2$parameter, lower.tail=FALSE), 3)`
+
+Cette différence pourra avoir des conséquences sur le rejet ou non de
+$H_0$, car les probabilités sont affectées proportionnellement:
+
+-   Variances supposées égales :
+    `r paste("p = ", round(res1$p.value, 3))`
+-   Variances supposées inégales:
+    `r paste("p = ", round(res2$p.value, 3))`
+
+Certains auteurs suggèrent de toujours utiliser le test de Welch puisque
+si les variances sont homogènes, les résultats seront identiques à ceux
+d'un test-t régulier, et dans le cas contraire la correction sera
+appliquée.
+
+#### Puissance Statistique: Test-t pour échantillons indépendants
+
+Les concepts fondamentaux concernant la puissance statistique ont été
+exposés dans le chapitre 9. Ces concepts trouvent également une
+application dans le cas de la comparaison de deux moyennes
+indépendantes. Dans ce cas, on pourra calculer l'importance de l'effet,
+$d$, défini par l'@eq-effet.
+
+$$
+ d=\frac{\left |\bar X_1-\bar X_2 \right |}{\sqrt{s_C^2}} =\frac{\left |\bar X_1-\bar X_2 \right |}{\sqrt{\frac{(n_1-1) s_1^2+ (n_2-1)s_2^2}{n_1+n_2-2}}}
+$$ {#eq-effet}
+
+On peut également obtenir l'erreur-standard de $d$ ainsi que son
+intervalle de confiance, utilisant l'@eq-effet2 et
+l'@eq-effet3.
+
+$$
+ s_d=\sqrt{\frac{n_1+n_2}{n_1n_2}+\frac{d^2}{2(n_1+n_2)}}
+$$ {#eq-effet2}
+
+$$
+ C[d-t_{dl;\alpha/2}s_d \le \delta \le d+t_{dl;\alpha/2}s_d ]
+$$ {#eq-effet3}
+
+### Exemple 17: Test d'hypothèse pour deux variances indépendantes
+
+L'exemple 8 a été l'occasion d'introduire la distribution
+d'échantillonnage des rapports de variances. Rappelons que le rapport
+entre deux variances indépendantes, que l'on nomme $F$, permet d'évaluer
+la différence entre ces variances: des variances égales produiront $F=1$
+et si la plus grande variance occupe le numérateur du rapport, alors
+toute différence se traduira par une valeur s'éloignant de ce minimum,
+en proportion de son importance. Rappelons également que la distribution
+F est déterminée par deux paramètres: les nombres de degrés de liberté
+pour le numérateur et pour le dénominateur du rapport.
+
+Pour illustrer l'utilisation de la distribution F pour vérifier une
+hypothèse concernant les différences de proportions au niveau de la
+population, reprenons l'exemple 11:
+
+> Est-ce que l'indice d'habileté cognitive (HabilCog) est plus homogène
+> dans le département de l'Ouest qu'en Artibonite?
+
+
+```{r}
+#| code-fold: false
+
+# Création des sous-populations
+subpop1 = subset(HaitiPop,(DEPARTEMENT=="8"),HabilCog)
+subpop2 = subset(HaitiPop,(DEPARTEMENT=="1"),HabilCog)
+
+# Création des échantillons
+nO  <-  25
+nA <-  30
+xechO <-  subpop1$HabilCog[sample(1:nrow(subpop1),nO,replace=FALSE)]
+xechA <-  subpop2$HabilCog[sample(1:nrow(subpop2),nA,replace=FALSE)]
+MxechO <- mean(xechO)
+MxechA <- mean(xechA)
+VxechO <- var(xechO)
+VxechA <- var(xechA)
+RapF  <-  max(VxechO, VxechA) / min(VxechO, VxechA)
+
+```
+
+```{r}
+#| echo: false
+
+xb1 <- round(MxechO, 3)
+v1 <- round(VxechO, 3)
+xb2 <- round(MxechA, 3)
+v2 <- round(VxechA, 3)
+F <- round(RapF, 3)
+```
+
+**Statistiques**:  
+
+* $\bar{X}_{Ouest} = `r xb1` \qquad s_{Ouest}^2 = `r v1`$\  
+* $\bar{X}_{Centr} = `r xb2`\qquad s_{Centr} = `r v2`$\  
+* $F = \frac{s_{Ouest}^2}{s_{Centr}^2} = `r F`$  
+ 
+
+Les hypothèses statistiques sont:
+
+$H_0:\frac{\sigma_{Artibonite}^2}{\sigma_{Ouest}^2}=1 \qquad H_1:\frac{\sigma_{Artibonite}^2}{\sigma_{Ouest}^2}>1$
+
+La distribution F théorique est déterminée par les deux nombres de
+degrés de liberté:
+
+```{r echo=FALSE}
+dlA <- nA-1
+dlO <- nO-1
+```
+
+$dl_{Ouest} = n_{Ouest} - 1=25-1=24$  
+$dl_{Artibonite} = n_{Artibonite} - 1=30-1=29$
+
+Et le rapport entre les variances dans les indices de Condition de Vie
+dans les départements de l'Artibonite et de l'Ouest (en plaçant la plus
+grande variance au numérateur), on obtient:
+
+```{r echo=FALSE}
+f <- VxechA / VxechO
+```
+
+$F=\frac{s_{Artibonite}^2}{s_{Ouest}^2}=\frac{`r round(VxechA,3)`}{`r round(VxechO,3)`} = `r round(f,3)`$
+
+Utilisant la fonction **F.Distr()** (@lst-FDistr), cette situation est représentée graphiquement ci-dessous:
+
+```{r echo=FALSE}
+
+F.Distr(f, dlO, dlA, 0.05)
+```
+
+On trouve donc que le rapport F ne s'éloigne pas suffisamment de $1.0$
+pour qu'il y ait évidence d'une différence entre les variances des deux
+populations.
+
+### Exemple 18: Test d'hypothèse pour deux proportions indépendantes
+
+Afin d'illustrer l'approche théorique dans le cas de test d'hypothèse
+concernant la différence entre deux proportions indépendantes,
+considérons l'exemple 12.
+
+> Peut-on affirmer que la proportion des adultes accordant leur
+> confiance au Candidat A dans le département du Nord est supérieure à
+> cette proportion dans le département de l'Ouest?
+
+On dispose d'un échantillon de 250 sujets dans le département du Nord,
+et de 325 sujets dans de département de l'Ouest pour examiner la
+question.
+
+```{r}
+#| code-fold: false
+
+# Création des sous-populations
+subpopN = subset(HaitiPop,((DEPARTEMENT=="5")&(AGE>=18)),PrefPres)
+subpopO = subset(HaitiPop,((DEPARTEMENT=="8")&(AGE>=18)),PrefPres)
+
+# Création des échantillons
+nN = 250
+nO = 325
+xechN = subpopN$PrefPres[sample(1:nrow(subpopN),nN,replace=FALSE)]==1
+xechO = subpopO$PrefPres[sample(1:nrow(subpopO),nO,replace=FALSE)]==1
+pN <- mean(xechN)
+pO <- mean(xechO)
+
+```
+
+**Statistiques**:  
+
+* $p_{Nord} = `r round(pN, 3)`$  
+* $p_{Ouest} = `r round(pO, 3)`$  
+* $p_{Nord}-p_{Ouest} = `r round(pN-pO, 3)`$  
+  
+Les hypothèses statistiques sont:
+
+$H_0:\pi_{Nord}-\pi_{Ouest}=0 \qquad H_1:\pi_{Nord}-\pi_{Ouest}>0$  
+
+La distribution d'échantillonnage des différences des proportions, on
+l'a dit, possède les caractéristiques suivantes:
+
+-   Cette distribution est gaussienne,
+-   avec une moyenne ($\mu_{\pi_{Nord}-\pi_{Ouest}}$) égale à la
+    différence des proportions au niveau de la population
+    ($\pi_{Nord}-\pi_{Ouest}$)
+-   et une erreur-standard égale à:
+
+```{r echo=FALSE}
+sedp <- sqrt((p1*(1-p1)/nO+(p2*(1-p2)/nA)))
+z <- (p1 - p2) / sedp
+             
+              
+```
+
+$$s_{p_{Nord}-p_{Ouest}}=\sqrt{\frac{ p_{Nord}(1-p_{Nord})}{n_N}+\frac {p_{Ouest}(1-p_{Ouest})}{n_O}}= \sqrt{\frac{ `r p1*(1-p1)`}{250}+\frac {`r p2*(1-p2)`}{325}}=`r round(sedp, 3)`$$
+
+La distance standardisée séparant la statistique échantillonnale
+($p_{Nord}-p_{Ouest}$) du paramètre correspondant de la population
+($\pi_{Nord}-\pi_{Ouest}$) devient alors:
+
+$$Z=\frac {(p_{Nord}-p_{Ouest})-(\pi_{Nord}-\pi_{Ouest})}{s_{p_{Nord}-p_{Ouest}}}=\frac {(`r round(p1, 3)`-`r round(p2, 3)`)-0}{`r round(sedp, 3)`}=`r round(z, 3)`$$  
+
+Sous la distribution normale, et en supposant que $H_0$ est vraie, la
+probabilité d'obtenir une telle valeur de Z ou des valeurs plus extrêmes
+est égale à:
+
+```{r}
+#| echo: false
+#| 
+pr <- pnorm(z)
+
+```
+
+$$P(|z| \ge `r round(z, 3)`) = `r round(pr, 3)` $$
+
+Ce résultat nous permet d'affirmer qu'il y a évidence à l'effet que la
+proportion des gens en âge de voter favorisant le candidat A dans le
+département du Nord est supérieure à la proportion que l'on observe dans
+le département de l'Ouest, au seuil de signification $\alpha=0.05$.
+
+## Estimation: deux échantillons corrélés (dépendants)
+
+Lorsque deux échantillons sont dépendants (ou corrélés, ou appariés) et
+que l'objectif d'une analyse est d'évaluer la différence pouvant exister
+entre ces échantillons, que ce soit concernant leur moyenne, leur
+variance, ou toute autre statistique pertinente pour la question de
+recherche qui est posée, il est nécessaire de tenir compte de la
+relation existant entre les deux ensembles de données. Une approche que
+l'on peut utiliser pour cette prise en compte est de considérer les
+différences observées entre chaque paire de données. Par exemple, pour
+des échantillons indépendants, on s'intéresse à évaluer
+$(\bar {X_1} - \bar {X_2})$. Pour des données corrélées, on examinera
+d'abord $(X_{i,Condx_1} - X_{i,Condx_2})$ pour chaque paire
+d'observations. Le résultat est une nouvelle variable formée de ces
+différences. Dans le cas d'une comparaison de moyennes, la moyenne de
+ces différences sera nulle, si ce qui distingue les deux mesures n'a pas
+d'impact.
+
+Un exemple concret permettra de mieux comprendre la situation. Imaginons
+une classe de mathématiques au niveau Fondamental. On évalue les
+compétences en calcul au début d'une session académique, puis on
+ré-évalue les mêmes compétences à la fin de la session. On s'intéresse
+évidemment à savoir si l'enseignement reçu durant la session a permis
+d'améliorer les compétences des élèves, en calcul. On peut très bien
+imaginer que les élèves qui ont de très bonnes habiletés au début de la
+session auront aussi de bonnes habiletés à la fin, et que ceux qui
+éprouvent des difficultés au début pourraient encore éprouver quelques
+difficultés à la fin. Si l'enseignement n'a pas d'impact sur les
+compétences, alors la moyenne des différences sera près de 0. Si
+l'enseignement a permis à la plupart des élèves d'améliorer leurs
+compétences, la moyenne des différences sera négative; dans le cas
+contraire, elle sera positive. De fait, 
+
+$$(\bar X_1 - \bar X_2)=\bar D$$ {#eq-difcor}
+
+Pour les besoins de la discussion, générons un ensemble de données
+représentant la performance en mathématiques pour un groupe de 25
+élèves, évalués au début ($Temps_1$), puis à la fin ($Temps_2$) de la formation:
+
+```{r 08-Chap8-31}
+#| code-fold: false
+
+ n = 25       
+ r = 0.7      
+ x1 = rnorm(n)  
+ x2 = rnorm(n)  
+ y1 = r * x2 + sqrt(1 - r^2) * x1 
+ x1 = x1*6+60
+ y1 = y1*6+63
+ d = x1-y1
+ dat <- data.frame(Temps1 = x1, Temps2 = y1, Diff = d)
+  
+```
+
+Pour chaque paire de données, on obtien la différence entre les scores observés. Ce sont ces différences qui alimenteront l'analyse.
+
+Les données générées et les différences observées pour chaque paire de données ($Diff$) sont affichées dans le tableau @tbl-corsmp:
+
+```{r}
+#| label: tbl-corsmp
+#| echo: false
+
+kable(
+  dat,
+  digits = 2,
+  caption = "Données recueillies"
+  )
+```
+
+```{r}
+#| echo: false
+ m1 <- mean(x1)
+ s1 <- sd(x1)
+ m2 <- mean(y1)
+ s2 <- sd(y1)
+ md <- mean(d)
+ sdt <- sd(d)
+ r12 <- cor(x1, y1)
+
+```
+
+Les statistiques descriptives pertinentes pour ces données sont affichées ci-dessous:
+
+**Statistiques**:  
+
+* $\bar{X}_{Temps_1} = `r round(m1, 3)` \qquad s_{Temps_1} = `r round(s1, 3)`$  
+* $\bar{X}_{Temps_1} = `r round(m2, 3)` \qquad s_{Temps_2} = `r round(s2, 3)`$    
+* $\bar{D} = `r round(md, 3)` \qquad \qquad s_{D} = `r round(sdt, 3)`$    
+* $r_{XY} = `r round(r12, 3)`$  
+ 
+La @fig-bpCorSmp illustre la distribution des observations aux deux occasions de mesure:  
+
+```{r}
+#| label: fig-bpCorSmp
+#| fig-cap: "Distribution de deux groupes corrélés"
+
+boxplot(x1,y1, 
+        main="Score Maths / Condition",
+        xlab="Score en Maths", 
+        ylab="Condition",
+        horizontal=TRUE, 
+        names=c("Au début","À la fin")) 
+```
+
+On y note une différence entre les moyennes observées. La question est de savoir si cette différence est un reflet d'une différence réelle au niveau de la population.
+
+### Estimation de la différence de moyennes: données corrélées
+
+L'estimation de la différence de moyennes pour échantillons corrélés se
+résume à l'estimation de la moyenne des différences. La procédure est
+donc identique à l'estimation d'une moyenne unique que nous avons
+étudiée antérieurement. En utilisant le ré-échantillonnage, on obtient l'intervalle de confiance suivant, illustré à la @fig-cormean:
+
+```{r}
+#| code-fold: false
+
+ns <- 100000
+xb <- replicate(ns, mean(sample(dat$Diff, nrow(dat), replace = TRUE)))
+```
+
+
+
+```{r}
+#| label: fig-cormean
+#| 
+obs_diff <- md
+xbd <- xb
+qtl <- intc
+p <- mean(abs(xbd) >= abs(obs_diff))
+txt1 <- paste("$\\bar{d} = ", round(obs_diff, 3), "$")
+txt2 <- paste("$p = ", round(p, 3), "$")
+txt <- paste("$C\\left [", round(qtl[1], 3), "\\leq \\delta \\leq ", round(qtl[2], 3), "\\right ]=95\\%$")
+
+h <- hist(xbd, breaks = "FD", plot = FALSE)
+breaks <- h$breaks
+counts <- h$counts
+
+left_tail <- which(breaks >= min(xbd) & breaks < qtl[1])
+right_tail <- which(breaks > qtl[2] & breaks <= max(xbd))
+
+cols <- rep("lightblue", length(breaks))
+cols[left_tail] <- "red"
+cols[right_tail] <- "red"
+
+hist(xbd, 
+     breaks = breaks, 
+     col = cols, 
+     border = "white", 
+     main = "Distribution d'échantillonnage\n de la moyenne des différences", 
+     sub = TeX(txt),
+     cex.sub = 1.2,
+     xlab = NULL)
+max_count <- max(h$counts)
+
+text(x = quantile(xbd, 0.001), y = max_count * 0.9, 
+     labels = TeX(txt1), adj = 0)
+text(x = quantile(xbd, 0.001), y = max_count * 0.8, 
+     labels = TeX(txt2), adj = 0)
+points(obs_diff, 0, pch = 17, col = "darkgreen", cex = 1.2)
+
+```
+
+
+On trouve que:
+
+$$C[ `r intc[1]` \le \mu_D \le \ `r round(intc[2], 3)`] = 95\%$$
+
+Bref, on a 95% des chances que l'intervalle s'étendant de `r round(intc[1], 3)` à
+`r round(intc[2], 3)` inclut la moyenne des différences au niveau de la
+population. On a 5% des chances que cela soit faux.
+
+Des résultats similaires peuvent s'obtenir à l'aide de la fonction
+**boot.paired.per()** de la librairie **wBoot**:
+
+```{r 08-Chap8-33}
+
+b.Diff = wBoot::boot.paired.per(x1, 
+                                y1, 
+                                conf.level = 0.95, 
+                                R = 9999)
+print.boot.paired(b.Diff)
+
+```
+
+On obtiendra évidemment des résultats similaires en utilisant la
+fonction **boot.one.per()** sur l'ensemble des différences ***d*** plutôt que sur les observations originales:
+
+```{r 08-Chap8-34}
+
+b.Diff = wBoot::boot.one.per(d,
+                             mean, 
+                             conf.level = 0.95, 
+                             R = 9999)
+print.boot.one(b.Diff)
+
+```
+
+### Estimation: deux échantillons corrélés - Approche théorique
+
+Formellement, le fait qu'il y ait corrélation entre les données
+observées sous deux conditions affecte la valeur de l'erreur-standard
+des différences de moyennes, par rapport à une situation où cette
+corrélation est nulle. En effet, pour des échantillons indépendants,
+l'erreur-standard des différences de moyennes a été définie par:
+
+$$\sigma_{\bar X_1-\bar X_2}=\sqrt{\sigma_{\bar X_1}^2+\sigma_{\bar X_2}^2}$$ {#eq-escor}
+
+Par contre, s'il y a corrélation entre les variables $X_1$ et $X_2$,
+nous détenons des informations additionnelles de fait même de cette
+corrélation: les données obtenues d'un groupe fournissent des
+informations non seulement sur l'ensemble de ce groupe, mais aussi au
+sujet du groupe qui lui est apparié. Ces informations supplémentaires
+doivent donc être intégrées à l'estimation de l'erreur-standard des
+différences de moyennes, qui se définit par:
+
+$$\sigma_{\bar X_1-\bar X_2}=\sqrt{\sigma_{\bar X_1}^2+\sigma_{\bar X_2}^2-2\rho\sigma_{\bar X_1}\sigma_{\bar X_2}}$$ {#eq-escor2}
+
+Si la corrélation entre les observations ($\rho$) est nulle, le terme
+$-2\rho \sigma_{\bar X_1}\sigma_{\bar X_2}$ disparait de l'équation et
+nous retrouvons la définition de l'erreur-standard appropriée pour des
+échantillons indépendants. Dans le cas contraire, la valeur de
+l'erreur-standard sera réduite en fonction du degré de corrélation.
+
+Mais il existe une manière plus simple de considérer l'estimation de la
+différence des moyennes: il suffit d'estimer la **moyenne des
+différences** ($d_i$)! Cette stratégie réduit le problème à l'estimation
+d'une moyenne unique, l'objectif est d'estimer la moyenne des
+différences observées entre les observations appariées, $d_i=X_i-Y_i$,
+plutôt que la différence des moyennes ($\bar X_1-\bar X_2$).
+
+La distribution d'échantillonnage des moyennes, on le sait, est
+gaussienne, avec une moyenne ($\mu_{\bar X}$) égale à la moyenne de la
+population ($\mu_{X}$), et une erreur-standard égale à :
+
+$$\sigma_{\bar X}=\frac{\sigma_X}{\sqrt n}$$ {#eq-senorm}
+
+La distribution
+d'échantillonnage des différences de moyennes corrélées est donc
+également gaussienne, avec une moyenne ($\mu_{\bar D}$) égale à la
+moyenne des différences ($\mu_{D}$) au niveau de la population, et une
+erreur-standard égale à:
+
+$$\sigma_{\bar d}=\frac{\sigma_d}{\sqrt n}$$ {#eq-sediff} 
+
+Nous connaissons donc déjà
+les détails de la procédure d'estimation. L'intervalle de confiance pour
+une différence de moyennes corrélées est défini par:
+
+$$C[{\bar d}-t_{(dl;1-\alpha /2)}s_{\bar d}\le \mu_d \le {\bar d}-t_{(dl;1-\alpha /2)}s_{\bar d}] = 100(1-\alpha)\%$$ {#eq-icescor}
+
+Revenant à l'exemple précédent, où les compétences en calcul au niveau
+Fondamental sont évaluées au début et à la fin de la session, afin de
+déterminer si l'enseignement reçu durant la session a permis d'améliorer
+les compétences des élèves, en calcul. Si l'enseignement n'a pas
+d'impact sur les compétences, alors la moyenne des différences sera près
+de 0 ($\mu_d=0$). Si l'enseignement a permis à la plupart des élèves
+d'améliorer leurs compétences, la moyenne des différences sera négative
+($\mu_d<0$); dans le cas contraire, elle sera positive ($\mu_d>0$). De
+fait, $(\bar X_1 - \bar X_2)=\bar d$.
+
+Le tableau @tbl-corsmp reproduit l'ensemble des observations et les statistiques descriptives pertinentes sont reproduites ci-dessous:  
+
+**Statistiques**:  
+
+* $\bar{X}_{Temps_1} = `r round(m1, 3)` \qquad s_{Temps_1} = `r round(s1, 3)`$  
+* $\bar{X}_{Temps_1} = `r round(m2, 3)` \qquad s_{Temps_2} = `r round(s2, 3)`$    
+* $\bar{D} = `r round(md, 3)` \qquad \qquad s_{D} = `r round(sdt, 3)`$    
+* $r_{XY} = `r round(r12, 3)`$  
+
+L'erreur-standard de la moyenne des différences est:
+
+```{r echo=FALSE}
+ m1 <- mean(x1)
+ s1 <- sd(x1)
+ m2 <- mean(y1)
+ s2 <- sd(y1)
+ md <- mean(d)
+ sdt <- sd(d)
+ r12 <- cor(x1, y1)
+
+sdbar <- sdt / sqrt(n)
+tc <- qt(0.975, n-1)
+lims <- c(md - sdbar*tc, md + sdbar*tc)
+```
+
+$$\sigma_{\bar d}=\frac{\sigma_d}{\sqrt n}=\frac{`r round(sdt, 3)`}{\sqrt {40}}= `r round(sdbar, 3)`$$
+
+Finalement, l'intervalle de confiance pour la moyenne des différences,
+pour un niveau de confiance $(1-\alpha)=0.95$ est produit:
+
+$$
+\begin{align}
+C[{\bar d}-t_{(dl;1-\alpha /2)}s_{\bar d}\le \mu_d \le {\bar d}-t_{(dl;1-\alpha /2)}s_{\bar d}] &= 100(1-\alpha)\%\\
+C[`r round(md, 3)`-`r round(tc, 3)`(`r round(sdbar, 3)`) \le \mu_d \le `r round(md, 3)`-`r round(tc, 3)`(`r round(sdbar, 3)`)] &= 100(1-0.05)\%\\
+C[`r round(lims[1], 3)` \le \mu_d \le `r round(lims[2], 3)`] &= 95\%
+\end{align}
+$$
+
+On note que cet intervalle `r ifelse(between(0, lims[1], lims[2]), "inclut ", "exclut ")` $\mu_d=0$, ce qui nous porte à croire que la performance en calcul  `r ifelse(between(0, lims[1], lims[2]), "ne change pas ", "change ")`, entre les deux occasions de mesure.
+
+### Tests d'hypothèse: deux échantillons corrélés - Approche empirique
+
+Un test d'hypothèse concernant deux échantillons corrélés impliquera les
+différences observées pour chaque paire d'observations, comme c'est le
+cas pour une estimation de la moyenne de ces différences. De ce fait, la
+procédure sera identique à celle utilisée pour un test d'hypothèse sur
+une moyenne unique, en utilisant le vecteur des différences comme
+variable analysée.
+
+#### Différence de moyennes
+
+Pour les données définies dans l'exemple précédent, supposons qu'on
+tente de vérifier si l'enseignement a été profitable aux élèves,
+c'est-à-dire que la performance à la fin de la session a été meilleure
+qu'au début: la différence des moyennes devrait être négative.
+
+Les hypothèses statistiques considérées dans ce cas sont:
+
+-   $H_0:\mu_{\bar d}=0$
+-   $H_1:\mu_{\bar d}<0$
+
+Utilisons la fonction **boot.one.per()** de la librairie **wBoot**, pour
+obtenir:
+
+```{r 08-Chap8-35}
+#| code-fold: false
+
+b.Diff = wBoot::boot.one.per(d,
+                             mean,
+                             null.hyp=0,
+                             alternative="less",
+                             R=100000)
+wBoot::print.boot.one(b.Diff)
+```
+
+La fonction **boot.paired.per** donnera évidemment des résultats
+similaires, en utilisant les données originales (x1 et y1):
+
+```{r 08-Chap8-36}
+#| code-fold: false
+
+b.Diff = boot.paired.per(x1, 
+                         y1, 
+                         null.hyp = 0,
+                         alternative = "less", 
+                         conf.level = 0.95, 
+                         R = 100000)
+b.Diff
+```
+
+### Test d'hypothèse: deux échantillons corrélés - Approche théorique
+
+Pour les données définies dans l'exemple précédent, supposons qu'on
+tente de vérifier si l'enseignement a été profitable aux élèves,
+c'est-à-dire que la performance à la fin de la session a été meilleure
+qu'au début: la différence des moyennes devrait être négative.
+
+Les hypothèses statistiques considérées dans ce cas sont:
+
+-   $H_0:\mu_{\bar d}=0$
+-   $H_1:\mu_{\bar d}<0$
+
+L'application de l'approche théorique au test d'hypothèse visant la
+différence de moyennes corrélées implique soit la distribution normale
+lorsque $n$ est grand, ou plus généralement, la distribution de Student.
+Nous connaissons déjà l'erreur-standard de la moyenne des différences
+($\sigma_{\bar d}$). Le problème se résume donc à évaluer la distance
+standardisée séparant $\bar d$ de $\mu_d$:
+
+```{r }
+#| code-fold: false
+
+t <- md / sdbar
+```
+
+$$t=\frac{{\bar d}-\mu_d}{s_{\bar d}} =\frac{`r round(md, 3)`-0}{`r round(sdbar, 3)`}= `r round(t, 3)`$$
+et la probabilité d'obtenir un tel $t$ ou une valeur plus extrême,
+**si** $H_0$ est vraie est:
+
+```{r}
+#| code-fold: false
+
+pr <- pt(t, n-1)
+cat("p = ", pr)
+```
+
+Nous disposons donc d'évidences à l'effet que la performance en calcul
+s'est améliorée en cours de session.
+
+La fonction **t.test()** de l'environnement de base de R permet ce type
+d'opération:
+
+```{r}
+#| code-fold: false
+
+t.test(x1, y1, 
+       alternative="less", 
+       mu=0, 
+       paired=TRUE, 
+       conf.level=0.95 )
+```
+
+## Exercices
+
+### Comparaison de moyennes I
+
+Pourrait-il exister une différence, au niveau de la population, entre la
+performance moyenne des hommes et des femmes au test de HabilCog, dans
+le département des Nippes? Pour répondre à cette question, considérons
+des échantillons de 35 hommes et de 40 femmes.
+
+```{r 08-Chap8-37}
+# Création des sous-populations
+subpop = subset(HaitiPop,(DEPARTEMENT=="4"),c(GENRE,HabilCog))
+subpopH = subset(subpop,GENRE=="M",HabilCog)
+subpopF = subset(subpop,GENRE=="F",HabilCog)
+# Création des échantillons
+nH = 35
+nF = 40
+xechH = subpopH$HabilCog[sample(1:nrow(subpopH),nH,replace=FALSE)]
+xechF = subpopF$HabilCog[sample(1:nrow(subpopF),nF,replace=FALSE)]
+cat("Moyenne (Hommes) = ",mean(xechH))
+cat("Moyenne (Femmes) = ",mean(xechF))
+```
+
+Le diagramme suivant illustre et résume la situation:
+
+```{r 08-Chap8-38}
+boxplot(xechH,xechF, main="HabilCog vx. GENRE",
+   xlab="Genre", ylab="HabilCog",horizontal=TRUE, names=c("Hommes","Femmes")) 
+```
+
+Les moyennes des échantillons sont de toute évidence différentes, est-ce
+que cette différence est le simple fait de l'erreur d'échantillonnage,
+ou reflète-t-elle une différence réelle entre les moyennes des
+populations d'où ces échantillons ont été tirés?
+
+Les hypothèses statistiques sont:
+
+$H_0:\mu_{Hommes}-\mu_{Femmes}=0$
+
+$H_0:\mu_{Hommes}-\mu_{Femmes}\neq0$
+
+```{r 08-Chap8-39}
+#
+# Ré-échantillonnage et distribution d'échantillonnage
+#
+library(wBoot)
+b.Diff = boot.two.per(xechH,xechF,mean,null.hyp=0,alternative="two.sided",conf.level=0.95,R=100000,stacked=FALSE)
+b.Diff
+print.boot.two(b.Diff)
+p = b.Diff$p.value
+```
+
+Les résultats indiquent que la différence observée entre les moyennes
+des deux échantillons (hommes et femmes) est un événement
+`r if(p<=0.05){"improbable"}else{"probable"}` (p = `r p` ). Ce résultat
+va `r if(p<=0.05){"à l'encontre"}else{"dans le sens"}` de ce que propose
+$H_0$. On `r if(p<=0.05){"peut"}else{"ne peut pas"}` rejeter cette
+hypothèse. La différence observée
+`r if(p<=0.05){"reflète"}else{"ne reflète pas"}` une réalité au niveau
+de la population, et on la considère comme statistiquement
+`r if(p<=0.05){"significative"}else{"non significative"}` . Il
+`r if(p<=0.05){"y a "}else{"n'y a pas"}` évidence voulant que la
+performance des hommes au test d'HabilCog diffère de celle des femmes.
+
+### Comparaison de moyennes II
+
+Est-ce qu'il y a une différence entre l'indice de criminalité chez les
+hommes vivant en Artibonite et ceux vivant dans le département du
+Centre? On peut disposer d'un échantillon de 50 sujets en Artibonite, et
+de 45 sujets dans le département du Centre pour examiner la question.
+
+```{r 08-Chap8-40}
+# Création des sous-populations
+subpopA = subset(HaitiPop,((DEPARTEMENT=="1")&(GENRE=="M")&(AGE>=15)),CRIMIDX)
+subpopC = subset(HaitiPop,((DEPARTEMENT=="2")&(GENRE=="M")&(AGE>=15)),CRIMIDX)
+
+# Création des échantillons
+nA = 50
+nC = 45
+xechA = subpopA$CRIMIDX[sample(1:nrow(subpopA),nA,replace=FALSE)]
+xechC = subpopC$CRIMIDX[sample(1:nrow(subpopC),nC,replace=FALSE)]
+cat("Moyenne (Artibonite) = ",mean(xechA))
+cat("Moyenne (Centre)     = ",mean(xechC))
+
+boxplot(xechA,xechC, main="CRIMIDX vx. Département",
+   xlab="CRIMIDX", ylab="Département",horizontal=TRUE, names=c("Artibonite","Centre")) 
+```
+
+On constate que les deux moyennes échantillonnales sont différentes.
+Est-ce que cette différence est le simple fait de l'erreur
+d'échantillonnage, ou reflète-t-elle une différence réelle entre les
+moyennes des populations d'où ces échantillons ont été tirés?
+
+Les hypothèses statistiques sont:
+
+$H_0:\mu_{Artibonite}-\mu_{Centre}=0$
+
+$H_0:\mu_{Artibonite}-\mu_{Centre}\neq0$
+
+```{r 08-Chap8-41}
+#
+# Ré-échantillonnage et distribution d'échantillonnage
+#
+library(wBoot)
+b.Diff = boot.two.per(xechA,xechC,mean,null.hyp=0,alternative="two.sided",conf.level=0.95,R=100000,stacked=FALSE)
+b.Diff
+print.boot.two(b.Diff)
+p = b.Diff$p.value
+```
+
+Les résultats indiquent que la différence observée entre les moyennes
+des deux échantillons (Artibonite et Centre) est un événement
+`r if(p<=0.05){"improbable"}else{"probable"}` (p = `r b.Diff$p.value` ).
+Ce résultat va `r if(p<=0.05){"à l'encontre"}else{"dans le sens"}` de ce
+que propose $H_0$. On `r if(p<=0.05){"peut"}else{"ne peut pas"}` rejeter
+cette hypothèse. La différence observée
+`r if(p<=0.05){"reflète"}else{"ne reflète pas"}` une réalité au niveau
+de la population, et on la considère comme statistiquement
+`r if(p<=0.05){"significative"}else{"non significative"}` . Il
+`r if(p<=0.05){"y a "}else{"n'y a pas"}` évidence voulant que l'indice
+moyen de criminalité en Artibonite diffère de celui du département du
+Centre.
+
+### Comparaison de deux proportions (Échantillons indépendants)
+
+Considérez la proportion des femmes ayant l'intention de voter pour le
+Candidat B aux prochaines élections présidentielles. Est-ce que cette
+proportion diffère entre le département du Sud-Est et le département du
+Nord-Ouest?
+
+### Comparaison de deux écarts-types (Échantillons indépendants)
+
+Est-ce que, à l'échelle du pays, la dispersion de l'indice de
+criminalité (CRIMIDX) varie selon le sexe des sujets?
+
+### Comparaison de moyennes (Échantillons corrélés)
+
+L'appréciation d'un candidat à l'élection présidentielle est mesurée sur
+une échelle de 1(aucune affinité avec le candidat) à 50 (Confiance
+absolue pour le candidat), avant et après un débat politique public. Un
+échantillon de 50 sujets est formé afin d'examiner l'impact qu'a eu le
+débat sur la mesure d'appréciation. Les données sont générées à l'aide
+du code R suivant (prenez soin d'installer la librairie **MASS** au
+préalable):
+
+```{r 08-Chap8-42}
+
+library(MASS)
+n = 50
+mu = c(15,12)
+A = matrix(runif(4)*2-1, ncol=2) 
+sigma = matrix(c(82.7,-45.46,-45.46,34.36),nrow=2)
+x = abs(round(mvrnorm(n=50, mu, sigma, empirical = TRUE)))
+head(x)
+cat("Corrélation = ",cor(x)[1,2])
+
+```
+
+Est-ce que le débat public a eu un impact significatif sur
+l'appréciation du candidat?
+
+## Appendice
+
+``` {#lst-RandUnif .sql lst-cap="RandUnif()"}
+
+#'
+#'Sample from a uniform distribution, with random lower and upper bounds
+#'@param n scalar value: Number of observations to draw (default = 50)
+#'@param a scalar value: lower bound of distribution
+#'@param b scalar value: upper bound of distribution
+#'@return list of vector of observations, and lower/upper bounds (quantitative values)
+#'@examples
+#'x1 <- RandUnif() # use defaults
+#'x2 <- RandUnif(25, 5, 15) # draw 25 observations within
+#'      lower limit set randomly from 5 to 15, and the upper limit set
+#'      randomly from the lower limit to 15
+#'@export
+RandUnif <- function(n = 25, a = 10, b = 20) {
+  if(a>=b){stop("Le paramètre a doit être inférieur au paramètre b!")}
+  liminf <- runif(1, a, b) 
+  limsup <- runif(1, liminf, b)  
+  x <- runif(n, liminf, limsup)
+  out = list(x, liminf, limsup)
+return(out)
+}
+```
+
+```{#lst-HaitiPopGen .sql lst-cap="HaitiPopGen()"} 
+#'
+#'Generate simulated Haiti (2019) population: 11.2 millions observations
+#'
+#'@return Data Frame containing the data structure:
+#'        GENRE: “M” = Masculin “F” = Féminin
+#'        AGE: Âge, en unité d’années
+#'        EDUC: Niveau de scolarité atteint à l’âge de 25 ans - Aucun -
+#'              PréScol - Fond.1 - Fond.2 - Fond.3 - Second - Univ.1 -
+#'              Univ.2 - Univ.3
+#'        DEPARTEMENT: Département de résidence
+#'         "1"  "Artibonite"
+#'         "2"  "Centre"
+#'         "3"  "Grand'Anse"
+#'         "4"  "Nippes"
+#'         "5"  "Nord"
+#'         "6"  "Nord-Est"
+#'         "7"  "Nord-Ouest"
+#'         "8"  "Ouest"
+#'         "9"  "Sud-Est"
+#'         "10" "Sud"
+#'
+#'        CondxVie: Indice général de condition de vie, sur une échelle de 0 à 50. Plus l’indice est élevé, plus les conditions de vie de la personne sont bonnes.
+#'        CRIMIDX: Indice de propension à la criminalité et à la corruption, sur une échelle de 0 à 150. Plus l’indice est élevé, plus l’individu a des tendances criminelles.
+#'        HabilCog: Indice d’habiletés cognitives, sur une échelle de 20 à 200. Plus cet indice est élevé, plus les habiletés intellectuelles et cognitives de l’individu sont grandes.
+#'        PrefPres: Préférence pour un candidat donné à la présidentielle de 2022. Cinq candidats sont en liste: CandA - CandE.
+#'        OpinConst: Opinion concernant à un nouveau projet de Constitution:
+#'          “Tout à fait d’accord”
+#'          “D’accord”
+#'          “Indécis”
+#'          “Pas d’accord”
+#'          “Pas du tout d’accord”
+#'
+#'L’objet sortant est un ‘DATA.FRAME’ appelé HaitiPop.
+#'@export
+HaitiPopGen <- function(){
+  set.seed(1234567)
+  # HaitiPop: Simultation de la population Haitienne (2019)
+  # Genre Féminin, effectif par groupe d'âge (données de 2019)
+  Age_female=c(620842, 608143, 590011, 565536, 531966, 493101, 458841,
+               410081, 309636, 245577, 218103, 187285, 149090, 118763,
+               80994, 60334, 34915, 15440, 5211, 1397, 217)
+
+  # Genre Masculin, effectif par groupe d'âge (données de 2019)
+  Age_male=c(645049, 629568, 607263, 571570, 525211, 479976, 442822,
+             390944, 286062, 221042, 199898, 169226, 135904, 102412,
+             64604, 47325, 24681, 10151, 3085, 720, 83)
+  PopTotale <- sum(Age_male)+sum(Age_female)
+
+  # Génération des âges et du genre
+  age <- c(seq(4,104,by=5))
+  AGE <- vector()
+  GENRE <- vector()
+  for(i in 1:length(age)){
+    AGE <- append(AGE,floor(runif(Age_male[i],(age[i]-4),age[i]+5)))
+    AGE <- append(AGE,floor(runif(Age_female[i],(age[i]-4),age[i]+5)))
+    GENRE <- append(GENRE,rep("M",Age_male[i]))
+    GENRE <- append(GENRE,rep("F",Age_female[i]))
+  }
+  Tdt <- data.frame(AGE,GENRE)
+  Tdt <- Tdt[sample(nrow(Tdt)),1:2]
+  # Génération des Départements et répartition de la population
+  Dept <- matrix(c(1:10,"Artibonite","Centre","Grand'Anse","Nippes",
+                  "Nord","Nord-Est","Nord-Ouest","Ouest","Sud-Est",
+                  "Sud"),nrow=2,byrow=TRUE)
+  # cat("Identification des Départements: ","\n",t(Dept))
+  # Proportion de la population par département
+  PropDept <- c(0.158316776, 0.037133348, 0.024201755, 0.018140699,
+               0.057563731, 0.022548639, 0.042675426, 0.24647869,
+               0.051350001, 0.066312107)
+  DEPARTEMENT <- sample(Dept[1,],size=PopTotale,replace=TRUE, prob=PropDept)
+  # Indice de condition de vie, distribution asymétrique
+  CondxVie <- rchisq(PopTotale,6)
+  Tdt <- data.frame(Tdt,DEPARTEMENT,CondxVie)
+  # Génération des niveaux de scolarité atteints, population adulte
+  EDUC=rep("NA",PopTotale)
+  NivScol <- c("Aucun","Fond.1","Fond.2","Fond.3","PréScol","Second",
+              "Univ.1","Univ.2","Univ.3")
+  PropNivScol <- c(0.2, 0.2, 0.18, 0.12, 0.09, 0.07, 0.06, 0.05, 0.03)
+  EDUC[Tdt$AGE>25] <- sample(NivScol, sum(Tdt$AGE>25), prob=PropNivScol, replace=TRUE)
+
+  # Génération de l'indice de criminalité
+
+  CRIMIDX <- rep("NA",PopTotale)
+  idx <- vector()
+  for(i in 1:10){
+    idx[i] <- sample(c(1,-1),1)*runif(1,0,30)
+  }
+
+  CRIMIDX <- 0.3*CondxVie + 3.5*(Tdt$GENRE=="M")-1.2*Tdt$AGE
+  CRIMIDX <- CRIMIDX +1.5*(EDUC<"Second")+10 +rnorm(1,0,4)
+  CRIMIDX <- CRIMIDX + idx[as.numeric(DEPARTEMENT)]
+  CRIMIDX <- CRIMIDX + (min(CRIMIDX)<0)*abs(min(CRIMIDX))
+  CRIMIDX[which(Tdt$AGE<15)] <- NA
+
+  # Génération de l'indice d'habiletés cognitives
+  HabilCog <- rnorm(PopTotale,100,15)
+  idx <- vector()
+  for(i in Dept){
+    idx[i] <- sample(c(1,-1),1)*runif(1,0,10)
+  }
+  HabilCog <- HabilCog+idx[DEPARTEMENT]
+
+  # Génération de la préférence pour un candidat présidentiel
+  # et de l'Opinion concernant la proposition d'une nouvelle Constitution
+
+  PrefPres <- rep(NA,PopTotale)
+  OpinConst <- rep(NA,PopTotale)
+
+  # Probabilités associées aux variables PresProb et OpinProb
+  PresProb <- matrix(c(0.58, 0.41, 0.003, 0.004, 0.003, # Nord-Ouest, Nord et Nord-Est
+                      0.41, 0.54, 0.003, 0.004, 0.043, # Artibonite et Centre
+                      0.27, 0.65, 0.006, 0.01, 0.064,  # Ouest
+                      0.15, 0.23, 0.38, 0.19, 0.05),   # Grand<Anse, Nippes, Sud et Sud-Est
+                    nrow = 4, ncol = 5, byrow = TRUE)
+  OpinProb <- matrix(c(0.5,0.3,0.1,0.05,0.05,           # Nord-Ouest, Nord et Nord-Est
+                      0.2,0.4,0.1,0.1,0.2,             # Artibonite et Centre
+                      0.01,0.09,0.2,0.4,0.3,           # Ouest
+                      0.4,0.1,0.0,0.1,0.4),            # Grand<Anse, Nippes, Sud et Sud-Est
+                    nrow = 4, ncol = 5, byrow = TRUE)
+  Regions <- list(c("5","6","7"), c("1","2"), c("8"),c("3","4","9","10"))
+  OptPres <- c("CandA", "CandB", "CandC", "CandD", "CandE")
+  OptOpin <- c("Tout à fait d'accord","D'accord","Indécis","Pas d'accord","Pas du tout d'accord")
+
+  for (i in 1:length(Regions)){
+    select <- (Tdt$AGE>=18)&(DEPARTEMENT %in% Regions[[i]])
+    PrefPres[select] = wakefield::political(n=sum(select), x = OptPres,prob = PresProb[i,], name = "PrefPres")
+    OpinC <- wakefield::r_sample_ordered(n=sum(select),x = OptOpin,prob = OpinProb[i,])
+    OpinConst[select] <- OpinC
+  }
+
+  # DATA.FRAME de sortie
+  HaitiPop <- data.frame(Tdt,EDUC,CRIMIDX,HabilCog,PrefPres,OpinConst)
+  return(HaitiPop)
+}
+
+
+```
+
+```{#lst-getmode .sql lst-cap="getmode()"} 
+# Calcul du mode d'une distribution de données nominales
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+```
+
+```{#lst-RV .sql lst-cap="RV()"} 
+# Calcul du rapport de variation
+RV = function(x){  
+  mod = getmode(x)
+  fm = sum(x==mod)
+  rv = 1-fm/length(x)
+
+}
+```
+
+```{#lst-rvDiff .sql lst-cap="rvDiff()"} 
+# Calcul de la différence de RV (2 groupes)
+rvDiff = function(x,y){  
+  rv1 = RV(x)
+  rv2 = RV(y)
+  DiffRV = rv1 - rv2
+  return(list(rv1, rv2, DiffRV))
+}
+```
+
+
+```{#lst-tDistr .sql lst-cap="t.Distr()"} 
+t.Distr <- function(t, df, alpha, h1){
+  x <- seq(-4,4,by=0.01)
+  y <- dt(x, df)
+  if(h1!=0){
+    right <- qt(1-alpha, df)
+    left <- qt(alpha, df)
+  }else{
+    right <- qt(1-alpha/2, df)
+    left <- qt(alpha/2, df)
+  }
+  plot(x, y, type="l",
+       xaxt="n",ylab="Probabilité",
+       xlab=expression(paste('Distribution des  ',(bar(X) - bar(Y)),' supposant  ', H[0],'  vraie')),
+       axes=FALSE,
+       ylim=c(0,max(y)*1.05),
+       xlim=c(min(x),max(x)),
+       frame.plot=FALSE)
+  axis(1,at=c(round(left, 3), 0, round(right, 3), round(t, 3)),
+       pos = c(0,0),
+       labels=TRUE)
+  axis(2)
+  xReject <- c(seq(-4,4,by=0.01))
+  yReject <- dt(xReject, df)
+  if(h1==-1){
+    yReject[xReject > left ] <- 0}else{
+      if(h1==1){yReject[xReject < right ] <- 0}else{
+        if(h1==0){yReject[xReject > left & xReject < right] <- 0}
+      }
+    }
+polygon(c(xReject,xReject[length(xReject)],xReject[1]),
+      c(0, yReject , 0), col='lightblue')
+if(h1!=0){
+  p <- pt(abs(t), df, lower.tail=FALSE)
+}else{
+  p <- 2 * pt(abs(t), df, lower.tail=FALSE)
+}
+legend("topleft", paste("p = ", round(p, 4)))
+arrows(t, .15, t, 0, length=0.1, col="red", lwd=2)
+text(t, 0.17, "t calculé", cex=1.2)
+}
+
+```
+
+```{#lst-printBboot2 .sql lst-cap="print.Bboot.2()"} 
+print.boot.2 <- function(x, ...)
+  {
+    test <- !is.null(x$Null)
+    
+    obs_diff <- x$Observed
+    xbd <- x$Boot.values
+    qtl <- c(x$Confidence.limits)
+    h <- hist(xbd, 
+              breaks = "FD", 
+              plot = FALSE)
+    breaks <- h$breaks
+    counts <- h$counts
+    maxf <- max(h$counts)
+    txt <- paste("$C\\left [", round(qtl[1], 3), "\\leq \\Delta \\leq ", round(qtl[2], 3), "\\right ]=95\\%$")
+    txt1 <- paste("$\\mu_{\\Delta} =", round(x$Mean, 3))
+    txt2 <- paste("$\\sigma_{\\Delta}=", round(x$SE, 3), "$")
+    left_tail <- which(breaks >= min(xbd) & breaks < qtl[1])
+    right_tail <- which(breaks > qtl[2] & breaks <= max(xbd))
+    
+    cols <- rep("lightblue", length(breaks))
+    cols[left_tail] <- "red"
+    cols[right_tail] <- "red"
+    
+    hist(xbd, 
+         breaks = breaks, 
+         col = cols, 
+         border = "white", 
+         main = "Distribution des Différences",
+         xlab = NULL,
+         sub = TeX(txt))
+
+    points(x$Observed, 0, pch = 17, col = "orange", cex = 1.2)
+    points(x$Null, 0, pch = 19, col = "darkgreen", cex = 1.2)
+    abline(v = x$Mean, lty = 2, lwd = 1.5, col = "darkblue")
+    legend("topright", legend = c("Int. Conf", "Zone de Rejet", "Diff. observée", "Moyenne", expression(mu[0])),
+                                  bty = "n",
+                                  lwd = 2, cex = 1.2, col = c("lightblue", "red", "orange", "darkblue", "darkgreen"), 
+                                  lty = c(NA, NA, NA, 2, NA), pch = c(15, 15, 17, NA, 19))
+    legend("topleft", legend = c(TeX(txt1), TeX(txt2)))
+    
+  }
+```
+
+```{#lst-FDistr .sql lst-cap="F.Distr()"}
+F.Distr <- function(f, df1, df2, alpha=.05){
+  x <- seq(0,4,by=0.01)
+  y <- df(x, df1, df2)
+  right <- qf(1-alpha, df1, df2)
+  plot(x, y, type="l",
+       xaxt="n",ylab="Probabilité",
+       xlab="Rapport F",
+       axes=FALSE,
+       ylim=c(0,max(y)*1.05),
+       xlim=c(min(x),max(x)),
+       frame.plot=FALSE)
+  axis(1,at=c(0, round(right, 3), round(f, 3)),
+       pos = c(0,0),
+       labels=TRUE)
+  axis(2)
+  xReject <- c(seq(0,4,by=0.01))
+  yReject <- df(xReject, df1, df2)
+  yReject[xReject < right ] <- 0
+
+  polygon(c(xReject, xReject[length(xReject)], xReject[1]),
+      c(0, yReject , 0), col='lightblue')
+  p <- pf(f, df1, df2, lower.tail=FALSE)
+legend("topleft", paste("p = ", round(p, 4)))
+arrows(f, .15, f, 0, length=0.1, col="red", lwd=2)
+text(f, 0.25, "F \n calculé", cex=1.2)
+arrows(right, .35, right, 0, length=0.1, col="red", lwd=2)
+text(right, 0.45, "F \n critique", cex=1.2)
+}

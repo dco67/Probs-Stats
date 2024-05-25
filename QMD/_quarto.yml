@@ -1,0 +1,132 @@
+project:
+  type: book
+  output-dir: _book
+title-block-banner: true
+title-block-banner-color: green
+title-block-style: default
+author:
+- name: Daniel Coulombe
+  email: dcoulomb@uottawa.ca
+  affiliations:
+  - name: "Institut des Sciences, Technologies et Études Avancées d'Haïti (ISTEAH)"
+author-title: Auteur
+date: last-modified
+date-format: short
+published-title: Date
+book:
+  title: Probabilités et Statistiques
+  subtitle: Quantification du Hasard
+  sidebar:
+    title: Méthodes Quantitatives
+  reader-mode: true
+  page-footer:
+    left: |
+      ISTEAH (2024)
+    right: |
+      Ce document a été rédigé à l'aide de <a href="https://quarto.org/">Quarto</a>.
+  favicon: Ricon.jpg
+  chapters:
+  - index.qmd
+  - part: "Le langage R"
+    chapters:
+      - chap02.qmd
+  - part: "Notion de probabilité"
+    chapters:
+      - chap03.qmd
+      - chap04.qmd
+      - chap05.qmd
+      - chap06.qmd
+  - part: "Statistiques descriptives"
+    chapters:
+      - chap07.qmd
+      - chap08.qmd
+  - part: "Inférence statistique"
+    chapters:
+      - chap09.qmd
+      - chap10.qmd
+      - chap11.qmd
+      - chap12.qmd
+      - chap13.qmd
+      - chap14.qmd
+  - part: "Régression linéaire"
+    chapters:
+      - chap15.qmd
+      - chap16.qmd
+      - chap17.qmd
+      
+    page-footer: 
+      left: "Copyright 2024, Daniel Coulombe" 
+    back-to-top-navigation: true
+prefer-html: true
+format:
+  html:
+    theme: cosmo
+    css:
+    - quarto.css
+    - glossary.css
+    - webex.css
+    - include/webex.css
+    include-after-body:
+    - webex.js
+    - include/webex.js
+    embed-resources: true
+    author-meta: Daniel Coulombe
+    callout-appearance: simple
+    toc: true
+    toc-expand: true
+    toc-location: left
+    toc-depth: 4
+    toc-title: Table des Matières
+    lot: true
+    lof: true
+    number-sections: true
+    documentclass: scrreprt
+    code-fold: true
+    code-tools:
+      source: false
+      toggle: true
+      caption: none
+    code-copy: true
+    code-block-bg: true
+    code-block-border-left: "#31BAE9"
+    code-link: true
+    smooth-scroll: true
+    page-layout: full
+    fig-width: 8
+    fig-height: 5
+    html-math-method: mathjax
+  epub:
+    documentclass: scrreprt
+    mainfont: Arial
+    code-block-bg: '#f1f1f1'
+    code-block-border-left: false
+    toc: true
+    lot: true
+    lof: true
+    fig-width: 8
+    fig-height: 5
+    header-includes: |
+      \titlehead{\includegraphics[width=6in]{cover-image.png}}
+  docx:
+    documentclass: scrreprt
+    mainfont: Arial
+    code-block-bg: '#f1f1f1'
+    code-block-border-left: false
+    toc: true
+    lot: true
+    lof: true
+    fig-width: 8
+    fig-height: 5
+knitr:
+  opts_chunk:
+    comment: '#>'
+    R.options:
+      knitr.graphics.auto_pdf: true
+engine: knitr
+lang: fr
+language:
+  callout-tip-title: Resource
+  callout-note-title: Note
+  callout-warning-title: Watch out!
+  callout-important-title: Important
+  callout-caution-title: Typo

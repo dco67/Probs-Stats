@@ -1,0 +1,1534 @@
+
+
+```{r}
+#| echo: false
+#| message: false
+
+source("global2.R")
+
+if(!exists("HaitiPop")){load("./data/HaitiPop_Env.RData")}
+
+```
+
+# Test d'hypothèse: échantillon unique {#sec-Chap11}
+ 
+La vérification d'hypothèse occupe une place prépondérante dans tous les champs d'investigation scientifique. Les paramètres d'une population susceptibles d'être mis en examen sont nombreux, mais peu importe leur nature, la manière de vérifier des hypothèses les concernant est constante et procède suivant la même séquence. Et à l'instar de l'estimation statistique, il est possible d'appliquer une approche empirique, fondée sur la simulation informatique et des distributions de probabilité empiriques, ou une approche analytique, fondée sur des distributions de probabilité théoriques, pour autant que  certains postulats pertinents soient respectés. Ces deux approches nous amènent à utiliser un ensemble de concepts communs, quel que soit le paramètre étudié.
+
+## Concepts de base
+
+Les intervalles de confiance nous permettent d'estimer un paramètre d'une population à partir des observations faites sur un échantillon. Ils permettent de répondre à la question:
+
+```{r echo=FALSE}
+textBox("Étant donné un ensemble d'observations recueillies auprès d'un échantillon, quel ensemble de valeurs serait susceptible d'inclure un paramètre donné de la population?", fontsize=14, bold=TRUE, lwd=2)
+``` 
+
+À la fin de l'exercice, on est en mesure de spécifier, avec un certain niveau de confiance, que le paramètre de la population est capturé par l'intervalle obtenu.
+
+Dans un grand nombre de situations, on peut avoir une idée de la valeur d'un paramètre d'une population, et on peut formuler des hypothèses à son égard. Essentiellement, on tente de répondre à une question telle que:
+
+
+```{r echo=FALSE}
+textBox("Étant donné un ensemble d'observations effectuées auprès d'un échantillon, peut-on raisonnablement croire qu'un paramètre de la population égale une certaine valeur?", fontsize=14, bold=TRUE, lwd=2)
+```   
+
+Par exemple, supposons que l'OCDE estime que l'indice de condition de vie moyen à l'échelle nationale est égal à 4.7. Puisque le département du Nord est une composante du pays, on pourrait penser ou croire que la moyenne de cet indice et également 4.7 dans cette région. Cette croyance pourrait nous amener à formuler une hypothèse telle que:  
+
+ <center>
+  
+ **La moyenne de CondxVie dans le département du Nord est égale à 4.7**
+  
+</center>
+
+Cette hypothèse peut être vraie, ou elle peut être fausse. Il nous faut un moyen de la confirmer ou de l'infirmer, sur la base d'observations que l'on obtient auprès d'un échantillon aléatoire d'Haïtiens vivant dans le département concerné. Et c'est dans ce type de contexte que les tests d'hypothèse entrent en jeu. Nous reviendrons sur cette question un peu plus loin. Un exemple légèrement plus simple nous permettra d'introduire les concepts nécessaires à la vérification d'une hypothèse.
+  
+### Exemple 1:
+
+Dans la région des Gonaïves, le Père Gérard produit des contenants de thé de Moringa sur lesquels est indiqué le poids: 50 grammes. Se pourrait-il que le poids indiqué soit erroné? 
+  
+ <center>
+
+![Contenant de Thé de Moringa](./images/moringa.jpg){height=30%}
+  
+</center>
+
+Pour répondre à une question de ce type, il convient de formuler au préalable une hypothèse spécifique concernant un paramètre de la population. Par exemple, on pourra énoncer l'hypothèse selon laquelle la moyenne de la population des poids de contenants de thé de Moringa est égale à 50 grammes. Par la suite, il suffira de vérifier si les observations recueillies auprès d'un échantillon aléatoire appuient cette hypothèse, ou tendent plutôt à l'infirmer. 
+
+
+### Les hypothèses statistiques
+
+L'hypothèse voulant que *la moyenne de la population des poids de contenants de thé de Moringa soit égale à 50 grammes* se traduit formellement par une expression telle que:
+$$H_0:\mu = 50$$
+Il s'agit de l'hypothèse dite **nulle**. Elle propose que le paramètre de la population ($\mu$ dans le présent cas) d'où est tiré l'échantillon est égal à une valeur spécifique (50 pour le présent exemple). C'est l'hypothèse sur laquelle porte l'ensemble de la procédure: c'est cette hypothèse que l'on retiendra ou que l'on rejettera à la fin du processus. Sa formulation implique **toujours** une égalité (**=**). Conceptuellement, $H_0$ propose que la distribution de la population est telle qu'affichée à la figure @fig-ti1.
+
+```{r}
+#| label: fig-ti1
+#| fig-cap: "Distribution d'échantillonnage proposée, supposant que \u03BC = 50"
+#| echo: false
+
+ggplot(data = data.frame(x = seq(47, 53, length.out=100)), aes(x)) +
+  stat_function(fun = dnorm, 
+                args = c(50, 0.74), col="cadetblue",
+                xlim = c(47, 53),
+                geom="area", fill="#84CA72", alpha=0.2) + 
+  ylab("Densité") +
+  xlab("\u03BC") +
+  scale_x_continuous(name = "Moyennes",
+                              breaks = seq(47, 53, 1),
+                              limits=c(47, 53)) +
+  scale_y_continuous(name = "Densité",
+                              breaks = seq(0, 0.6, 0.1),
+                              limits=c(0, 0.6)) +
+  geom_vline(xintercept=50, linetype="dashed",  color = "red", linewidth=0.8) +
+  geom_label(aes(label=paste("\u03BC","0"), 
+                 y=0.585, 
+                 x=50, 
+                 color="red"), 
+             size=7, fontface='bold') +
+  theme(legend.position="none")
+
+```
+  
+On suppose une distribution normale avec une moyenne que l'on croit être égale à 50. Si cette distribution réflète réellement la population, alors la moyenne de tout échantillon d'une certaine taille qui en est tirée se trouvera à quelque part le long de l'axe horizontal. La question est de savoir si un échantillon dont la moyenne $\bar X$ est égale à une certaine valeur aurait pu avoir été prélevé de cette population. En d'autres termes, quelle est la probabilité d'obtenir une moyenne échantillonnale donnée, si la distribution proposée correspond vraiment à celle de la population? On peut aisément imaginer qu'une moyenne se trouvant dans une extrémité de la distribution est improbable et pourrait être celle d'un échantillon tiré d'une population autre que celle que l'on propose.
+
+Advenant le cas où $H_0$ doit être rejetée, on considérera son opposée, l'hypothèse **alternative**. Si on ne peut retenir l'hypothèse que $\mu = 50$, alors on pourra croire que $\mu \neq 50$, ou que $\mu < 50$, ou encore que $\mu > 50$.  Laquelle de ces trois possibilités sera choisie dépend de la question de recherche qui a conduit à l'énoncé de l'hypothèse nulle:  
+  
+  - Est-ce que le poids des contenants de thé est **différent** de celui indiqué?  $\mu \neq 50$  
+  - Est-ce que le poids des contenants de thé est **inférieur** à celui indiqué?  $\mu < 50$  
+  - Est-ce que le poids des contenants de thé est **supérieur** à celui indiqué?  $\mu > 50$  
+
+Dans le premier cas, on qualifiera de **non directionnel** ou de **bilatéral** le test d'hypothèse; dans les deux autres cas, on utilisera le terme **directionnel** ou **unilatéral** pour qualifier ce test. 
+
+Conceptuellement, l'hypothèse alternative ($H_1$) propose que la distribution de la population est telle qu'affichée à la figure @fig-ti2.
+  
+```{r}
+#| label: fig-ti2
+#| fig-cap: "Distribution d'échantillonnage proposée, supposant que \u03BC \u2260 50"
+#| echo: false
+
+ggplot(data = data.frame(x = seq(47, 53, length.out=100)), aes(x)) +
+    stat_function(fun = dnorm, 
+                args = c(50, 0.74), col="cadetblue",
+                xlim = c(47, 53),
+                geom="area", fill="#84CA72", alpha=0.2) + 
+  geom_vline(xintercept=50, linetype="dashed",  color = "red", linewidth=0.8) +
+  geom_label(aes(label=paste("\u03BC","0"), 
+                 y=0.585, 
+                 x=50, 
+                 color="red"), 
+             size=7, fontface='bold') +
+
+  stat_function(fun = dnorm, 
+                args = c(51, 0.74), col="brown2",
+                xlim = c(47, 53),
+                geom="area", fill="#A52A2A", alpha=0.2) + 
+  ylab("Densité") +
+  xlab("\u03BC") +
+  scale_x_continuous(name = "Moyennes",
+                              breaks = seq(47, 53, 1),
+                              limits=c(47, 53)) +
+  scale_y_continuous(name = "Densité",
+                              breaks = seq(0, 0.6, 0.1),
+                              limits=c(0, 0.6)) +
+  geom_vline(xintercept=51, linetype="dashed",  color = "red", linewidth=0.8) +
+  geom_label(aes(label=paste("\u03BC","1"), 
+                 y=0.585, 
+                 x=51, 
+                 color="red"), 
+             size=7, fontface='bold') +
+  theme(legend.position="none")
+
+```
+
+Tout ce qui distingue cette distribution de celle que $H_0$ propose, c'est la moyenne: $\mu_0=50$, et $\mu_1=51$. Si l'échantillon est tiré d'une population autre que celle spécifiée par $H_0$, alors la moyenne de l'échantillon, $\bar X$, est un estimateur de $\mu_1$. Le problème à résoudre est donc de déterminer de quelle distribution, en toute probabilité, provient l'échantillon.
+
+### Procédure générale {#sec-procgen}
+
+Un échantillon aléatoire de 25 contenants, que vous prenez soin de peser à l'aide d'un instrument de haute précision, vous apporte les éléments nécessaires pour répondre à la question de recherche. Pour les besoins de l'exemple, ces données ont été générées à l'aide du code R suivant, en spécifiant $\mu_X=51.5$. De plus on suppose que le producteur connait l'écart-type de la population des poids de son produit: $\sigma_X=4$.
+
+Les observations obtenues de cet échantillons sont les suivantes:  
+  
+  
+```{r echo = c(2:5)}
+
+set.seed(123)
+x = round(rnorm(25,   # n
+                51.5, # mu
+                4),   # sigma
+          2)          # Génération des données
+xb = round(mean(x),2) # moyenne
+
+mat <- matrix(x, nrow=5, byrow=TRUE)
+write.table(format(mat, 
+                   justify="right"),
+            row.names=FALSE, 
+            col.names=FALSE, 
+            quote=FALSE, 
+            sep = "   ")
+
+```
+La stratégie est la suivante:
+
+*  Calculons la moyenne des poids de contenants de thé pour l'échantillon que nous avons tiré aléatoirement de la population de l'ensemble des contenants produits au cours de la dernière année. Pour l'échantillon à notre disposition, on obtient $\bar X=`r round(xb,3)`$:
+  
+*  Spécifions la distribution d'échantillonnage des moyennes. Nous savons que cette distribution est Gaussienne, avec $\mu_{\bar{X}}=\mu_X$, et une erreur-standard égale à: 
+  
+$$\sigma_{\bar X}=\frac{\sigma_X}{\sqrt{n}}= \frac{4}{\sqrt{25}}=0.80$$ {#eq-se1}  
+  
+*  Centrons cette distribution sur ce que nous croyons être la moyenne de la population: 50 grammes dans le cas présent. Il suffira de soustraire de chaque observation la différence entre la moyenne de l'échantillon et la moyenne que l'on croit vraie au niveau de la population: $X_{Centré}=X - (51.37 - 50)$. Cette distribution est celle qu'on s'attend d'obtenir **si $H_0$ est vraie**.   
+
+* De cette distribution, calculons la probabilité d'observer une moyenne égale ou plus extrême que celle obtenue pour notre échantillon: quelle est la probabilité qu'une moyenne soit supérieure ou égale à $\bar X=51.37$, dans une distribution dont la moyenne $\mu=50$ et une erreur-standard $\sigma_{\bar X}=0.80$?    
+
+* Prenons une décision sur la base de cette probabilité:   
+    - si elle est élevée, les observations ne vont pas à l'encontre de $H_0$, que l'on retient. Cela n'indique pas que $H_0$ est vraie, mais seulement qu'on ne la rejette pas, faute d'évidence contraire.   
+    - si elle est faible, les observations vont à l'encontre de $H_0$, que l'on rejette tout en acceptant que l'on puisse se tromper ce faisant.  
+
+::: {.callout-tip}
+**Mais que signifie une probabilité faible ou élevée?...**
+:::   
+
+### Le niveau de signification
+
+La probabilité que l'on définit comme critère de la prise de décision concernant le rejet ou non de $H_0$ porte le nom de **niveau de signification** et est symbolisée par $\alpha$. Il s'agit de la probabilité de rejeter $H_0$, si cette hypothèse est **vraie**. Formellement, il s'agit d'une probabilité conditionnelle: 
+$$\alpha = P(Rejeter\;H_0 | H_0\; vraie)$$
+C'est donc la probabilité de commettre une erreur en rejetant une hypothèse qui, au niveau de la population, est vraie. On veut donc que cette probabilité ne soit pas trop élevée: on veut se tromper le moins souvent possible! 
+
+On se souviendra du **niveau de confiance** introduit dans le contexte de l'estimation d'un paramètre d'une population. Il s'agissait de la probabilité qu'un intervalle donné capture le paramètre recherché. On voulait cette probabilité élevée, de manière à pouvoir obtenir des estimations justes le plus souvent possible!
+
+Les notions de niveau de confiance $(1-\alpha)$ et de niveau de signification $(\alpha)$ sont donc complémentaires. Dans le cas de l'estimation, on utilise souvent $(1-\alpha)=0.95$; dans une vérification d'hypothèse, on utilisera souvent $\alpha=0.05$. Mais ce choix n'est pas absolu: l'analyste conservera toujours la liberté de choisir le niveau de signification en fonction du contexte de la recherche. Et on verra qu'au-delà du niveau de signification, il y a d'autres critères à considérer lorsqu'arrive le temps de prendre une décision quant au rejet ou non de $H_0$.
+
+### Retour à l'exemple 1
+
+Vérifions l’hypothèse nulle, proposant que la moyenne de la population visée (poids des contenants de moringa) est égale à 50 grammes. En prenant une décision concernant le rejet ou non de cette hypothèse, on accepte de se tromper une fois sur 20: le niveau de signification est $\alpha$ = 0.05. Notons qu'on cherche à savoir s'il pourrait y avoir une erreur dans l'affichage du poids des contenants, que cette erreur se traduise par un poids inférieur, ou supérieur, à celui indiqué sur le contenant. Il s'agit donc d'une hypothèse bilatérale, non directionnelle.
+
+Les hypothèses statistiques proposent donc:  
+
+  - $H_0:\mu = 50$
+  - $H_1:\mu \neq 50$
+
+Dans cette situation, l'hypothèse nulle est que la moyenne de la population d'où est tiré l'échantillon est $\mu=50$. Ultimement, la question que l'on pose est: 
+
+'**Si $H_0$ est vraie, quelle est la probabilité d'observer $\bar X=$ `r xb` ou une valeur plus extrême?**' 
+
+La probabilité que l'on cherche correspond à une aire sous la distribution décrite par $H_0$, c'est-à-dire une distribution **normale** dont la moyenne est $\mu=50$ et l'écart-type est $\sigma_{\bar{X}}= 0.80$ (voir @eq-se1). Conceptuellement, Il est donc nécessaire de centrer la distribution d'échantillonnage sur cette valeur. On obtient cette distribution en calculant:  
+
+$$\bar{X}_{C}=\bar{X}_{Boot} - \bar{X}_{Ech}+\mu_{H_0} $$
+
+Cette transformation est linéaire et ne change en rien ni la forme, ni la dispersion, de la distribution des moyennes. Elle permet simplement d'obtenir une distribution supposant que $H_0$ est vraie.
+
+Pour effectuer une vérification de l'hypothèse nulle, nous ne disposons que d'un seul échantillon, mais nous devons évidemment nous référer à une distribution d'échantillonnage appropriée à la situation. Comme pour l'estimation d'un paramètre d'une population, le ré-échantillonnage nous permet d'établir cette distribution. Rappelons que le ré-échantillonnage consiste à former un grand nombre d'échantillons à partir de l'échantillon original, et de la même taille que ce dernier, l'échantillonnage s'effectuant **avec remise**. La fonction **resamp.mean()** (@lst-resampmean) permet de ré-échantillonner les données à $k$ reprises, et de calculer la moyenne et l'écart-type des moyennes obtenus de chaque échantillon. En option, on obtient les moyennes centrées autour de la moyenne de la population, telle que proposée dans l'hypothèse nulle.  Appliquant cette fonction sur l'échantillon défini dans le paragraphe précédent (@sec-procgen), et procédant à $k = 100,000$ ré-échantillonnages, on obtient les résultats suivants
+
+  
+```{r}
+#| code-fold: false
+
+mu0 <- 50                             # H0: mu = 50
+bootstr  <-  resamp.mean(x,           # Ré-échantillonnage
+                         k = 100000,  # Nombre de réplications 
+                         mu = mu0)    # H0 = 50
+
+bootm <- bootstr$mean            # Moyenne des moyennes
+boots <- bootstr$se              # Erreur-standard des moyennes
+
+xbC <- bootstr$meansCtr          # Moyennes centrées sur la valeur spécifiée dans H0
+
+nc  <-  0.95                     # Niveau de confiance
+intc <- quantile(bootstr$means,  # Intervalle de confiance
+                 c(.5*(1-nc),
+                   nc+.5*(1-nc)))  
+intp <- quantile(xbC,
+                 c(.5*(1-nc),
+                   nc+.5*(1-nc)))# Intervalle des valeurs probables, sous H0 
+```
+ 
+ Les paramètres de la distribution de ré-échantillonnage sont:  
+ 
+ $$\mu_{\bar{X}}= `r round(bootm, 3)` \qquad \sigma_{\bar{X}}=`r round(boots, 3)` $$
+
+La distribution de ré-échantillonnage des moyennes est illustrée à la @fig-tiex1:
+
+```{r}
+#| label: fig-tiex1
+#| fig-cap: "Distribution d'échantillonnage des moyennes et intervalle de confiance (95%). La ligne segmentée bleue indique la position de la moyenne de la population, telle que proposée dans l'hypothèse nulle. Les zones de probabilités faibles sont affichées en rouge, aux extrémités de la distribution."
+#| echo: false
+#| message: false
+#| error: false
+#| warning: false
+
+p <- plot_histogram(bootstr$means, 
+                    shade = "between", 
+                    threshold1 = intc[1],
+                    threshold2 = intc[2],
+                    obs = NULL) +
+  geom_segment(x = mu0, xend = mu0, y = 0, yend = 1000,
+               linetype = "dashed",
+               color = "darkblue",
+               linewidth = 1.2) +
+  theme(legend.position = "none") 
+
+ print(p)                    
+              
+
+```
+
+Appliquant la procédure présentée à la section @sec-bootstrap1 et illustrée à la section @sec-Ex1, on obtient:
+
+$$C \left [ `r round(intc[1],3)` \le \mu \le `r round(intc[2],3)`\right ]=95\% $$
+
+Cette distribution est centrée sur la moyenne de l'échantillon original, $\bar{X}=`r round(xb, 3)`$, ce qu'on s'attend d'obtenir en ré-échantillonnant les données originales. L'intervalle de confiance correspond à l'ensemble des valeurs parmi lesquelles pourrait se retrouver la moyenne de la population ($\mu_X$). L'hypothèse nulle propose que cette moyenne est égale à 50, une valeur qui effectivement se trouve à l'intérieur de l'intervalle, quoiqu'à sa limite inférieure.  À première vue, on serait amené à retenir $H_0$.
+
+Considérons maintenant la distribution d'échantillonnage centrée sur la moyenne proposée dans l'hypothèse nulle, illustrée dans la @fig-tiex2
+
+```{r}
+#| label: fig-tiex2
+#| fig-cap: "Distribution d'échantillonnage des moyennes centrées sur la moyenne proposée dans l'hypothèse nulle et intervalle des valeurs probables sous H0 (95%). La ligne segmentée bleue indique la position de la moyenne de l'échantillon. Les zones de probabilités faibles sont affichées en rouge, aux extrémités de la distribution."
+#| echo: false
+#| message: false
+#| error: false
+#| warning: false
+
+p <- plot_histogram(bootstr$meansCtr, 
+                    shade = "between", 
+                    threshold1 = intp[1],
+                    threshold2 = intp[2],
+                    obs = NULL) 
+p <- p +  geom_segment(x = xb, xend = xb, y = 0, yend = 1000,
+               linetype = "dashed",
+               color = "darkblue",
+               linewidth = 1.2) +
+  theme(legend.position = "none") 
+ print(p)                    
+
+```
+
+Dans ce cas, on obtient l'intervalle des valeurs plausibles de moyennes d'échantillons tirés d'une population dont la moyenne est égale à celle proposée par $H_0$. La moyenne de l'échantillon original ($\bar{X}=`r round(xb, 3)`$) fait partie de ces valeurs. On serait donc porté à retenir $H_0$.  Ainsi, on pourrait formuler la conclusion du test de l'une ou l'autre des manières suivantes, selon la formulation des hypothèses:
+
+```{r}
+#| echo: false
+
+pval1 <- mean(bootstr$means >= xb)
+Decision1 <- if (pval1 <= (1 - nc)) {"REJET \\; de \\; H_0$"} else {"Non-Rejet\\; de \\; H_0"}
+
+pval2 <- mean(bootstr$means <= xb)
+Decision2 <- if (pval2 <= (1 - nc)) {"REJET \\; de \\; H_0$"} else {"Non-Rejet\\; de \\; H_0"}
+
+pval3 <- min(mean(bootstr$means >= xb), mean(bootstr$means <= xb)) * 2
+Decision3 <- if (pval3 <= (1 - nc)) {"REJET \\; de \\; H_0$"} else {"Non-Rejet\\; de \\; H_0"}
+
+
+     
+```
+
+- Pour un test unilatéral droit: 
+
+  - $p = `r round(pval1, 4)` \qquad \rightarrow \qquad `r Decision1`$
+
+- Pour un test unilatéral gauche: 
+
+  - $p = `r round(pval2, 4)` \qquad \rightarrow \qquad `r Decision2`$
+
+- Pour un test bilatéral: 
+
+  - $p = `r round(pval3, 4)` \qquad \rightarrow \qquad `r Decision3`$
+
+On trouve donc que s'il est vrai que le poids moyen des contenants de Moringa est de 50 grammes, la probabilité que la moyenne d'un échantillon tiré de cette population soit égale ou plus extrême que `r xb` est élevée (p = `r pval3`): elle est supérieure au niveau de signification choisi ($\alpha=0.05$). De ce fait, on ne peut pas rejeter l'hypothèse nulle. On n'a pas suffisamment d'évidence pour affirmer que le poids indiqué sur les contenants de Moringa est incorrect.
+
+
+## Test d'hypothèse: Approche empirique
+  
+Dans l'exemple présenté ci-dessus, l'approche empirique a été mise à profit pour introduire les différents concepts communs à tous les tests d'hypothèse. Dans les paragraphes suivants, nous l'appliquons pour la vérification d'hypothèses concernant différents paramètres d'une population unique.
+  
+### Exemple 2: Test d'hypothèse pour une moyenne
+
+Est-ce que l'indice de condition de vie moyen dans le Département du Nord est **supérieur** à 4.7, en moyenne? 
+Pour répondre à cette question, formons un échantillon aléatoire de 50 individus vivant dans le département du Nord (DEPARTEMENT==5):
+
+```{r}
+#| code-fold: false
+set.seed(23434334)
+subpop <- subset(HaitiPop,(DEPARTEMENT==5),CondxVie)
+xech <- sample(subpop$CondxVie,50,replace=FALSE)
+mu0 <- 4.7
+xb <- mean(xech)
+
+
+```
+La moyenne de l'échantillon ($\bar{X}=`r round(xb, 3)`$) est un estimateur de $\mu$, que l'on suppose être égale à 4.7. Quelle position occuperait $\bar X = `r round(xb, 3)`$ dans une distribution dont $\mu=4.7$? Quelle serait la probabilité, sous cette distribution, d'obtenir une moyenne plus extrême encore? Pour trouver réponse à ces question, il est nécessaire de centrer les données autour de $\mu=4.7$:
+
+```{r}
+#| code-fold: false
+
+H0Dat <- xech - xb + mu0   # Recentrage des données sur H0
+```
+
+Les hypothèses statistiques appropriées à cette situation sont:  
+
+  - $H_0:\mu = 4.7$
+  - $H_0:\mu > 4.7$
+
+Dès lors, on peut utiliser le ré-échantillonnage (100,000 itérations) pour établir la distribution de ré-échantillonnage, caractérisée par les paramètres suivants:
+
+```{r}
+#| code-fold: false
+
+bootstr = boot.mean(H0Dat,
+                    100000)
+m1 <- mean(bootstr$means) 
+s1 <- bootstr$std.err
+```
+
+$$\mu_{\bar{X}}=`r round(m1, 3)` \qquad \sigma_{\bar{X}}=`r round(s1, 3)` $$
+
+De cette distribution, on peut aisément obtenir l'intervalle de confiance de la moyenne en calculant les percentiles $P_{2.5}$ et $P_{97.5}$, pour un niveau de confiance fixé à 95%, ceci conformément à la procédure décrite à la section @sec-bootstrap1:
+
+```{r}
+#| code-fold: false
+
+nc = 0.95                                 # Niveau de confiance
+intc=quantile(bootstr$means,
+              c(.5*(1-nc),nc+.5*(1-nc)))  # Calcul des percentiles
+
+```
+
+$$C\left [`r round(intc[1],3)` \le \mu \le `r round(intc[2],3)` \right ]=95\% $$
+
+Pour conclure le test, on peut vérifier si la moyenne de l'échantillon se trouve à l'intérieur de l'intervalle de confiance, ou simplement calculer la probabilité d'obtenir une moyenne égale ou supérieure, sous la distribution de ré-échantillonnage:
+
+```{r}
+#| echo: false
+
+  cat("Pour un test unilatéral droit:")
+  cat("   p = ",
+      pval1 <- mean(bootstr$means>=xb))
+  ifelse(pval1 <= (1-nc), 
+         paste("REJET de H0!"), 
+         paste("NON-REJET de H0!"))
+```
+
+Ce résultat est illustré à la @fig-th1.
+
+```{r}
+#| label: fig-th1
+#| fig-cap: "Distribution d'échantillonnage des moyennes et intervalle de confiance. La moyenne observée au niveau de l'échantillon est indiquée par la ligne verticale. La zone ombragée en rouge occupe 5% de la distribution des moyennes."
+#| message: false
+#| warning: false
+#| error: false
+
+X <- bootstr$means
+plot_histogram(X, 
+               shade = "over", 
+               threshold1 = NULL, 
+               threshold2 = quantile(c(X), 0.95), 
+               obs = xb) 
+```
+
+Pour une hypothèse unidirectionnelle à droite, on trouve p = `r pval1`, qui est largement en deçà du seuil de signification ($\alpha=0.05$). S'il est vrai que la moyenne de la population est égale à 4.7, la probabilité qu'un échantillon tiré de cette population présente une moyenne supérieure ou égale à `r round(xb,3)` est faible. On a donc un appui à l'idée que l'indice de condition de vie moyen dans le département du Nord est supérieur à ce que l'OCDE estime au niveau national.
+
+Les résultats de l'analyse incluent aussi un intervalle de confiance. On trouve:
+
+$$C\left [`r round(intc[1],3)` \le \mu \le `r round(intc[2],3)` \right ]=95\% $$
+
+Cet intervalle représente l'ensemble des valeurs probables des moyennes d'échantillons, **si l'hypothèse nulle est vraie**. Il est donc distinct de celui que l'on obtient à partir des données échantillonnales non centrées:
+  
+```{r}
+#| echo: false
+nc = 0.95
+intc=quantile(bootstr$means,c(.5*(1-nc),nc+.5*(1-nc)))  # Calcul des percentiles
+
+```
+ C[`r round(intc[1],3)+xb-mu0` $\le \mu_0 \le$ `r round(intc[2]+xb-mu0,3)`] = 95% 
+ $$C\left [`r round(intc[1],3)+xb-mu0` \l3 \mu \le `r round(intc[2],3)+xb-mu0` \right ]=95\% $$
+
+Dans le premier cas, on considère la distribution décrite par l'hypothèse nulle, alors que dans le second cas, on n'impose pas de contrainte sur la valeur de la moyenne de la population. On peut vérifier à l'aide des fonctions **boot()** et **boot.ci()**, de la librairie **boot**:
+
+```{r}
+#| label: fig-th3
+#| fig-cap: "Intervalles de confiance fondé sur $H_0$, et sur les données originales seulement"
+#| code-fold: false
+
+# Utilisant la librairie boot
+Mboot1 = boot(xech,
+              function(x,i) mean(x[i]),
+              R=100000)
+Mboot1
+bootic1 = boot.ci(Mboot1,
+                  conf=0.95,
+                  type="perc")
+bootic1
+
+Mboot2 = boot(H0Dat,
+              function(x,i) mean(x[i]),
+              R=100000)
+Mboot2
+bootic2 = boot.ci(Mboot2,
+                  conf=0.95,
+                  type="perc")
+bootic2
+
+lo = c(bootic1$percent[4],bootic2$percent[4])
+hi = c(bootic1$percent[5],bootic2$percent[5])
+plot_ci(lo,hi,mu0)
+```
+On note dans la figure @fig-th3 que l'intervalle de confiance obtenu à partir des données non centrées (originales) ne capture pas la moyenne de la population qui a été proposée dans l'hypothèse nulle ($\mu=4.7$). On peut donc conclure qu'effectivement, la moyenne de l'échantillon est improbable si l'hypothèse nulle est vraie. De ce fait, on peut constater que l'estimation statistique et le test d'hypothèse sont les deux côtés d'une même médaille: ils ne peuvent fournir des indications contraires.
+
+### Exemple 3: Test d'hypothèse pour une médiane
+
+Est-ce que l'indice de Condition de Vie médian dans le département du Nord pourrait être supérieur à 5? Pour répondre à cette question, on peut introduire la fonction **boot.one.per()** de la librairie **wBoot**. Cette fonction offre la possibilité d'effectuer un test d'hypothèse autant sur une variance qu'une moyenne, une médiane, ou toute autre fonction définie par l'analyste. On obtient également les intervalles de confiance pertinents au problème.  Les paramètres de la fonction sont:  
+
+  - **x**: le vecteur des données  
+  - **parameter**: la fonction définissant le paramètre à étudier (eg: mean, median, var, sd, etc.)  
+  - **null.hyp**: paramètre proposé dans l'hypothèse nulle  
+  - **alternative**: c("two.sided" , "less" , "greater"): Directionalité de l'hypothèse  
+  - **conf.level**: niveau de confiance  
+  - **R**: Nombre de ré-échantillonnage à effectuer  
+    
+Un échantillon aléatoire tiré de la population ciblée fournit les données suivantes:
+
+```{r}
+#| code-fold: false
+
+set.seed(2234343)
+subpop = subset(HaitiPop,
+                (DEPARTEMENT==10),
+                CondxVie)
+xech = sample(subpop$CondxVie,
+              50,
+              replace=FALSE)
+md1 <- median(xech)
+md0 = 5   # Médiane sous H0
+
+```
+  
+Peut-on affirmer que ces observations, pour lesquelles $Md = `r round(md1, 3)` $, pourraient provenir d'une population dont la médiane serait supérieure à 5?  
+
+Les hypothèses statistiques proposent que:  
+
+  - $H_0:Md = 5$
+  - $H_1:Md > 5$
+
+Par ré-échantillonnage (100,000 échantillons), on obtient les résultats suivants, représentés dans la figure @fig-thmed1:
+
+```{r}
+#| label: fig-thmed1
+#| fig-cap: "Distribution d'échantillonnage de la médiane"
+#| code-fold: false
+
+b.med = boot.one.per(xech,
+                     parameter=median,
+                     null.hyp=md0,
+                     alternative="greater",
+                     conf.level=0.95,
+                     R=100000)
+print.boot.one(b.med)
+ 
+```
+
+
+```{r}
+#| echo: false
+
+mu.md <- b.med$Mean
+se.md <- b.med$SE
+md1 <- b.med$Observed
+pval <- b.med$p.value
+```
+
+
+La moyenne de la distribution des médianes obtenues (pour 100,000 ré-échantillons) est $\mu_{Md}= `r round(mu.md, 3)`$, avec $\sigma_{Md} = `r round(se.md, 3)`$. En supposant que $H_0$ est vraie, la probabilité d'obtenir une $médiane \geq `r round(md1, 3)`$ est égale à $p=`r round(pval, 3)`$, une probabilité qui dépasse largement le niveau de signification ($\alpha=0.05$). En conséquence, on `r if(pval<=0.05){"rejette "}else{"ne rejette pas "}` $H_0$.  Nous n'avons pas suffisamment d'évidence permettant d'affirmer que  l'indice de Condition de Vie médian dans le département du Nord pourrait être supérieur à 5. Pour ces données, l'intervalle de confiance inclut effectivement $Md=5$:  
+
+```{r}
+#| echo: false
+
+liminf <- b.med$Confidence.limits 
+```
+
+
+$$C\left [`r round(liminf[1])` \le Md \le \infty \right ]=95\% $$
+
+### Exemple 4: Test d'hypothèse pour une variance
+
+Selon le Bureau des Statistiques Sociales d'Haïti, la variance de l'indice de criminalité pour l'ensemble du pays est égale à 500. Suite à des études préparatoires sur le terrain, un chercheur en Criminologie de l'ISTEAH croit qu'en Artibonite, les individus sont relativement homogènes à ce niveau, ce qui se traduirait par une variance plus faible que dans l'ensemble du territoire Haïtien. Pour s'en convaincre, il forme un échantillon aléatoire de 100 résidents d'Artibonite et mesure chez chacun d'eux l'indice de criminalité en utilisant une échelle psychométrique standardisée. Son hypothèse, selon laquelle la variance de la population d'Artibonite est plus faible qu'à l'échelle nationale, se traduit par les hypothèses statistiques suivantes:  
+
+  - $H_0:\sigma^2 = 500$
+  - $H_1:\sigma^2 < 500$
+  
+Le code R suivant génère les données échantillonnales à partir de la base de données **HaitiPop**: 
+
+```{r}
+#| code-fold: false
+
+subpop  <-  subset(HaitiPop,
+                   (AGE>=15)&(DEPARTEMENT=="1"),
+                   CRIMIDX)
+xcrim  <-  sample(subpop$CRIMIDX,
+                  100,
+                  replace=FALSE)
+xb  <-  mean(xcrim)
+vcrim  <-  var(xcrim)
+var0  <-  500    # Variance de la population sous H0
+
+```
+
+Au niveau de cet échantillon, on trouve:  
+
+$$\bar{X}_{CrmIdx}=`r round(xb, 3)` \qquad s_{CrmIdx}^2=`r round(vcrim, 3)` $$
+
+Encore une fois, la fonction **boot.one.per()** nous permettra de vérifier l'hypothèse nulle proposée. Les résultats sont résumés par la figure @fig-thvar1:
+
+
+```{r }
+#| label: fig-thvar1
+#| fig-cap: "Distribution d'échantillonnage de la variance"
+
+b.var = boot.one.per(xcrim,
+                     parameter=var,
+                     null.hyp=500,
+                     alternative="less",
+                     conf.level=0.95,
+                     R=100000)
+print.boot.one(b.var)
+
+```
+
+Les résultats indiquent que si $H_0$ est vraie, la probabilité d'obtenir une $s^2\leq$ `r round(b.var$Observed,3)` est égale à `r b.var$p.value`. En conséquence, on `r if(b.var$p.value<=0.05){"rejette "}else{"ne rejette pas "}` $H_0$.
+
+L'intervalle de confiance (95%) de la variance est:  
+
+$$C\left [-\infty \le \sigma_{CrmIdx}^2 \le `r round(liminf[1])` \right ]=95\% $$
+Cet intervalle inclut la valeur de la variance proposée dans $H_0$, en accord avec les conclusions du test d'hypothèse.  
+
+
+### Exemple 5: Test d'hypothèse pour un consensus
+
+On croit que le consensus concernant le projet de nouvelle Constitution est plus élevé dans la région du Nord (départements 5, 6 et 7) que dans l'ensemble du pays, que l'on estime à 0.56. Est-ce que cette croyance pourrait se vérifier? Pour répondre à cette question, on forme un échantillon de 250 résidents de l'un ou l'autre des trois départements du Nord. Les observations recueillies auprès de cet échantillon sont résumées dans le tableau @tbl-consens1.
+
+
+```{r}
+#| label: tbl-consens1
+#| tbl-cap: "Description des observations recueillies auprès d'un échantillon formé dans les trois départements du Nord d'Haiti"
+
+subpop  <-  subset(HaitiPop,
+                (AGE>=18)&(DEPARTEMENT %in% c("5","6","7")),
+                OpinConst)
+Opinion  <-  sample(subpop$OpinConst , 
+                 250, 
+                 replace=FALSE)
+tbl  <-  table(Opinion)
+rownames(tbl) <- c("Très défavorable", 
+                   "Défavorable", 
+                   "Indifférent", 
+                   "Favorable", 
+                   "Très Favorable")
+tbl %>%
+  kbl(align = rep("c", 5)) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+              full_width=FALSE) 
+
+```
+
+Les hypothèses statistiques proposent que:  
+
+  - $H_0:Consensus = 0.56$
+  - $H_1:Consensus > 0.56$
+
+Pour effectuer cette analyse, il sera nécessaire de définir une fonction qui produira la répartition des réponses et calculera l'indice de consensus pour chacun des ré-échantillons:
+
+
+```{r }
+#| code-fold: false
+
+constabl <- function(x){
+  tbl <- table(x)
+  consens <- agrmt::consensus(tbl)
+  return(consens)
+}
+
+```
+
+Finalement, l'analyse se poursuit avec 100,000 ré-échantillonnages à l'aide de la fonction **boot.one.per()**, comme pour les exemples précédents. La figure @fig-consens2 illustre les résultats obtenus:
+
+
+```{r}
+#| label: fig-consens2
+#| fig-cap: "Distribution d'échantillonnage du consensus"
+#| code-fold: false
+
+b.cons = wBoot::boot.one.per(xech,
+                             parameter=constabl,
+                             null.hyp=0.56,
+                             alternative="greater",
+                             conf.level=0.95,
+                             R=100000)
+wBoot::print.boot.one(b.cons)
+
+```
+
+Les résultats indiquent que si $H_0$ est vraie, la probabilité d'obtenir un $consensus\ge$ `r round(b.cons$Observed,3)` est égale à `r b.cons$p.value`. En conséquence, on `r if(b.cons$p.value<=0.05){"rejette "}else{"ne rejette pas "}` $H_0$. On constate que le consensus au niveau de la population du Nord concernant le projet de constitution `r if(b.cons$p.value<=0.05){"est "}else{"n'est pas "}` plus élevé que celui de l'ensemble de la population Haïtienne. L'intervalle de confiance du consensus, obtenu à partir de ces données est le suivant:  
+
+```{r}
+#| echo: false
+
+liminf <- b.cons$Confidence.limits
+```
+
+
+$$C\left [`r round(liminf[1], 3)` \le Cons \le \infty \right ]=95\% $$
+
+### Exemple 6: Test d'hypothèse pour une proportion
+
+La proportion des Haïtiens qui ont l'intention de voter pour le candidat A à l'élection présidentielle pour l'ensemble du pays s'établit à 19%, selon le plus récent sondage. Est-ce que cette proportion pourrait être différente dans le Département des Nippes, où on dispose d'un échantillon de 400 sujets?
+
+L'échantillon obtenu aléatoirement fournit les données suivantes:
+
+```{r}
+#| code-fold: false
+
+set.seed(071552)
+subpop  <-  subset(HaitiPop,
+                   (AGE>=18)&(DEPARTEMENT == "4"),
+                   PrefPres)
+xech = sample(subpop$PrefPres ,
+              400,
+              replace=FALSE)
+propA = mean(xech==1)
+
+```
+
+La proportion des intentions de vote en faveur du candidat A, dans le département des Nippes est $p = `r round(propA, 3)`$. Est-ce que cette proportion se démarque de $\pi=0.20$, que l'on retrouve au niveau national?
+
+Les hypothèses statistiques proposent que:
+  
+  - $H_0:\pi_{Nippes} = 0.20$
+  - $H_0:\pi_{Nippes} \neq 0.20$
+  
+La fonction suivante permettra de calculer la proportion des individus favorisant le Candidat A, au niveau d'un échantillon:
+
+```{r 06-Chap6-20}
+PropA = function(x){p = mean(x == 1)}
+```
+  
+Finalement, on obtient les résultats suivants, suite à $k=100000$ ré-échantillonnages:
+
+```{r 06-Chap6-21}
+
+b.propA = wBoot::boot.one.per(xech,
+                              PropA,
+                              null.hyp=0.20,
+                              alternative="two.sided",
+                              conf.level=0.95,
+                              R=100000)
+wBoot::print.boot.one(b.propA)
+
+```
+Les résultats indiquent que si $H_0$ est vraie, la probabilité d'obtenir une proportion en faveur du Candidat A égale ou plus extrême que la proportion observée, $P(|p| \ge `r format(b.propA$Observed, digits=3)`)= `r format(b.propA$p.value, digits=6, scientific=FALSE)`$. En conséquence, on `r if(b.propA$p.value<=0.05){"rejette "}else{"ne rejette pas "}` $H_0$. On peut donc conclure que la population du Nord se démarque significativement de l'ensemble de la population haïtienne, en ce qui concerne le Candidat A. L'intervalle de confiance de la proportion est:
+
+```{r}
+#| echo: false
+
+limits <- b.propA$Confidence.limits
+```
+
+
+$$C\left [`r round(limits[1], )` \le Cons \le `r round(limits[2], 3)`\right ]=95\% $$
+
+### En bref...
+
+Conceptuellement, la pratique du ré-échantillonnage avec l'objectif d'estimer un paramètre d'une population ou de vérifier une hypothèse concernant ce paramètre est simple. Sous R, on peut effectuer les tâches requises de plusieurs manières, ce qui devrait être manifeste à l'examen des différents exemples présentés dans ce document. La procédure la plus simple pourrait se décrire de la manière suivante:
+  
+  1. Définir la population cible, dont on veut estimer ou vérifier un paramètre donné.  
+    - La fonction **DT()** de la librairie **data.table**, ou la fonction **subset()** sont probablement les façons les plus simples d'effectuer cette définition:
+
+***
+|       **Avec data.table:**
+  
+|           library(data.table)  
+|           DT <- as.data.table(*DataFrame*)   
+|           subpop <- DT[*Condition de sélection*)]$*Variables*
+  
+|       **Avec subset()**:  
+    
+|          subpop <- subset(*DataFrame*,(*Condition de sélection*),*Variables*) 
+
+***
+
+  2. Tirer un échantillon aléatoire d'une certaine taille de cette population, en utilisant une méthode d'échantillonnage appropriée à la situation.
+  
+***  
+|     **Avec sample() et une sélection aléatoire d'indices:**
+  
+|       x = subpop[sample(1:length(subpop), n, replace=FALSE)]
+  
+|     **Avec sample() et une sélection aléatoire des données:**
+  
+|       x = sample(subpop$*Variable*, n, replace=FALSE)
+
+***
+
+  3. Définir une fonction permettant de calculer l'estimateur du paramètre étudié (ie la statistique échantillonnale). Il peut s'agir d'une fonction existante dans R, ou d'une fonction créée par l'analyste:
+
+*** 
+|   **Fonction existante:**
+    
+|       mean, median, var, sd, etc.
+  
+|   **Fonction définie par l'analyste:**
+  
+|       *fns* <- function(x){
+|       *sortie* <- *calcul d'une statistique*
+|       }
+
+***
+
+  4. Ré-échantillonner un grand nombre de fois, avec remise, et obtenir la distribution d'échantillonnage appropriée. La manière la plus simple pourrait être:
+  
+***
+|   library(wBoot)
+|   *Variable* = boot.one.per(x,
+|                        parameter=*Fonction*,
+|                        null.hyp=*Paramètre*,
+|                        alternative="two.sided",
+|                        conf.level=0.95,
+|                        R=100000)
+  
+|  **Exemple**:
+|   CalcY = function(x){
+|       xyz = sum(x)/sd(x)
+|       return(xyz)
+|       }
+|   R.var = boot.one.per(x,
+|                        CalcY,
+|                        null.hyp=8.2,
+|                        alternative="two.sided",
+|                        conf.level=0.95,
+|                        R=100000) 
+***
+
+  5. Compléter l'estimation (obtenir l'intervalle de confiance) et/ou le test d'hypothèse à partir de la distribution d'échantillonnage obtenue
+  
+***
+|   La fonction **print.boot.one()** affiche les détails de l'estimation et du test d'hypothèse
+  
+|       print.boot.one(*Variable*)
+  
+|   Exemple:
+  
+|       print.boot.one(R.var)
+
+***
+
+## Test d'hypothèse: Approche analytique (théorique)
+
+Pour plusieurs statistiques échantillonnales, nous disposons de modèles de distributions de probabilité qui s'ajustent bien à différentes distributions d'échantillonnage. Nous savons que 
+  
+* la distribution normale s'ajuste bien à la distribution d'échantillonnage des moyennes, si la taille de l'échantillon est grande; 
+* la distribution de Student fonctionne bien avec ce type de distribution, même lorsque la taille de l'échantillon est faible; 
+* la distribution du $\chi^2$ s'ajuste assez bien à la distribution d'échantillonnage des variances 'standardisées';
+* la distribution normale s'ajuste bien à la distribution d'échantillonnage des proportions, pour autant la taille de l'échantillon est suffisamment élevée pour la proportion des 'succès' au niveau de la population...
+
+L'utilité de ces distributions théoriques pour l'estimation de paramètres a été démontrée dans le chapitre précédent. Et il a été mentionné que l'estimation statistique et la vérification d'hypothèse sont les deux côtés d'une même médaille. Il ne faut dont pas se surprendre de les retrouver dans le présent contexte.
+  
+### Exemple 7: Test d'hypothèse pour une moyenne, grand échantillon, $\sigma$ connu {#sec-exemple7}
+
+> Est-ce que l'indice de condition de vie moyen dans le Département du Nord est supérieur à 4.7? 
+
+Pour répondre à cette question, formons un échantillon aléatoire de 25 individus vivant dans le département du Nord (DEPARTEMENT==5):
+
+```{r}
+#| code-fold: false
+
+set.seed(23434334)
+subpop = subset(HaitiPop,
+                (DEPARTEMENT==5),
+                CondxVie)
+xech = sample(subpop$CondxVie, 
+              25, 
+              replace=FALSE)
+mu0 = 4.7
+xb = mean(xech)
+stdev <- sd(xech)
+```
+
+La valeur moyenne de l'indice de condition de vie est, pour cet échantillon, égale à $\bar{X}_{CndxVie}= 'r round(xb, 3)'$, et son écart-type $s_{CndxVie}='r round(stdev, 3)'$.  La question posée est directionnelle: on est intéressé à savoir si la moyenne de CondxVie pourrait être **supérieure** à une valeur donnée. On peut donc écrire:  
+
+  - $H_0:\mu = 4.7$
+  - $H_0:\mu > 4.7$
+
+```{r}
+#| echo: false
+
+stdev <- sd(subpop$CondxVie)
+```
+
+L'Institut des Statistiques Sociales d'Haïti a certifié que l'écart-type de la population est $\sigma_{CondxVie}= `r round(stdev, 3)`$. Il n'est donc pas nécessaire d'estimer cette quantité à partir des données échantillonnales, et on peut utiliser la distribution normale comme modèle pour obtenir les probabilités nécessaires à l'exercice.
+
+L'erreur-standard des moyennes est donnée par:
+  
+```{r}
+#| echo: false
+
+sdp <-sd(subpop$CondxVie)
+sem <- sdp / sqrt(25)
+z <- (xb - 4.7) / sem
+```
+
+$$\sigma_{\bar X}=\frac {\sigma_{CondxVie}}{\sqrt n}= \frac{`r round(sdp, 3)`}{5}= `r round(sem, 3)` $$
+
+À partir de ce moment, tout est en place pour compléter la vérification de $H_0$. Il suffit d'évaluer la distance qui sépare la moyenne de l'échantillon ($\bar X$) de la moyenne de la population ($\mu$), en unité d'erreur-standard des moyennes ($\sigma_{\bar X}$), et de calculer la probabilité d'obtenir une telle valeur ou une valeur plus extrême, **en supposant que $H_0$ est vraie**:
+  
+$$Z=\frac{\bar X - \mu}{\sigma_{\bar X}}=\frac{`r round(xb,3) - 4.7`}{`r round(sem, 3)`}=`r round(z, 3)`$$
+
+La valeur critique délimitant la zone de rejet de $H_0$ , est donnée par le tableau de la distribution normale. Pour $\alpha=0.05$ et un test unilatéral, on trouve:
+
+```{r}
+#| label: tbl-Ztbl
+#| tbl-cap: "Valeurs critiques  de x, en fonction de l'aire sous la courbe, à gauche. La valeur critique pertinente pour le cas présent est surlignée."
+#| warning: false
+
+interpretCI::show_z_table(p=0.95, alternative="greater")
+```
+
+Puisque $z = `r round(z, 3)` > `r round(qnorm(0.95), 3)`$, on rejette $H_0$.  De manière alternative et parfaitement équivalente, la probabilité d'obtenir une statistique Z égale ou plus extrême que celle observée pour l'échantillon étudié (test unilatéral droit),  toujours en supposant $H_0$ vraie, est égale à:
+
+```{r}
+pr <- pnorm(z, lower.tail=FALSE)
+
+```
+
+$$p(z \ge `r round(z, 3)`) = `r round(pr, 4)`$$
+
+En utilisant le niveau de signification $\alpha=0.05$, $H_0$ est rejetée: il y a évidence à l'effet que l'indice de condition de vie dans le département du Nord est supérieur à 4.7. Ce résultat est similaire à celui obtenu en utilisant l'approche empirique sur la même question. La @fig-normPlt illustre la situation.
+
+```{r}
+#| label: fig-normPlt
+#| fig-cap: "Aire sous la courbe normale correspondant au score Z observé. "
+#| echo: false
+#| warning: false
+#| error: false
+
+p <- draw_n(z = z, alternative = "greater" )
+x1 <- qnorm(0.05, lower.tail = FALSE)
+
+p + geom_segment(aes(x = x1, 
+                     y = 0,
+                     xend = x1,
+                     yend = 0.1),
+                     color = "darkblue") +
+  geom_text(aes(x = x1, y = 0, label = round(x1, 2)), vjust = 1, color = "darkblue") +
+  geom_text(aes(x = z, y = 0, label = round(z, 2)), vjust = 1, color = "darkblue") +
+  annotate("text", 
+           x = x1 + 0.05, 
+           y = 0.1, 
+           label = expression("Zone de rejet ("*alpha*" = 0.05)"), 
+           hjust = 0, 
+           vjust = -0.5, 
+           color = "darkblue") +
+  theme(legend.position="none")
+```
+
+La probabilité d'observer $z = `r round(z, 3)`$ ou une valeur plus extrême, supposant que $H_0$ est vraie, est $p = `r round(pr, 3)`$. Toute valeur de $z$ supérieure à la valeur critique $z_{Crit}=1.64$ est jugée peu probable et conduit au rejet de $H_0$, au niveau de signification $\alpha=0.05$.
+
+### Exemple 8: Test d'hypothèse pour une moyenne, petit échantillon, $\sigma$ inconnu
+
+Reprenons l'exemple précédent, mais cette fois en utilisant l'écart-type de l'échantillon comme estimateur de l'écart-type de la population, l'Institut des Statistiques Sociales ne disposant pas de cette dernière quantité.
+
+> Est-ce que l'indice de condition de vie moyen dans le Département du Nord est supérieur à 4.7? 
+
+Pour l'échantillon de *n*=25 sujets chez qui l'indice de condition de vie a été mesuré, on obtient les indices descriptifs suivants:
+
+```{r}
+#| echo: false
+
+m1 <- mean(xech)
+s1 <- sd(xech)
+
+```
+
+L'erreur-standard des moyennes, estimé à partir des données échantillonnales est:
+
+```{r}
+#| echo: false
+sem <- s1/sqrt(length(xech))
+t <- (m1-mu0) / sem
+```
+
+$$s_{\bar X}=\frac{s_x}{\sqrt{n}}=\frac{`r round(s1, 3)`}{\sqrt{25}}=`r round(sem, 3)` $$
+
+$H_0$ propose que la moyenne de la population soit égale à 4.7. La statistique *t* est donc définie par:
+
+$$t=\frac{\bar X - \mu}{s_{\bar x}}=\frac{`r round(m1, 3)` - 4.7}{`r round(sem, 3)`}=`r round(t, 3)`$$
+
+
+La valeur critique délimitant la zone de rejet de $H_0$ , est donnée par le tableau de la distribution de student. Pour un test unilatéral utilisant $\alpha=0.05$ et un échantillon de 25 observations ($dl=24$), on trouve:
+
+```{r}
+#| label: tbl-Ttbl
+#| tbl-cap: "Valeurs critiques  de t, en fonction du nombre de degrés de liberté et de l'aire sous la courbe, à gauche. La valeur critique pertinente pour le cas présent est surlignée."
+#| warning: false
+
+interpretCI::show_t_table(DF=24, p=0.95, alternative="greater")
+```
+
+Puisque $t = `r round(t, 3)` > `r round(qt(0.95, df=24), 3)`$, on rejette $H_0$.  
+
+De manière alternative et équivalente, la probabilité d'obtenir une statistique *t* égale ou plus extrême que celle observée pour l'échantillon étudié, toujours en supposant $H_0$ vraie, est:
+
+```{r}
+pr <- pt(t, 
+         24, 
+         lower.tail=FALSE)
+```
+
+$$p(t \ge `r round(t, 3)`) = `r round(pr, 4)`$$  
+
+ 
+En utilisant le niveau de signification $\alpha=0.05$, $H_0$ est rejetée: il y a évidence à l'effet que l'indice de condition de vie dans le département du Nord est supérieur à 4.7. La @fig-distrT résume la situation.
+
+```{r}
+#| label: fig-distrT
+#| fig-cap: "Aire sous la distribution de Student correspondant au score t observé. "
+#| echo: false
+#| warning: false
+#| error: false
+
+p <- draw_t(DF = 24, t = t, alternative = "greater" )
+x1 <- qt(0.05, df = 24, lower.tail = FALSE)
+
+p + geom_segment(aes(x = x1, 
+                     y = 0,
+                     xend = x1,
+                     yend = 0.09),
+                     color = "darkblue") +
+  geom_text(aes(x = x1, y = 0, label = round(x1, 2)), vjust = 1, color = "darkblue", size = 3) +
+  geom_text(aes(x = t, y = 0, label = round(t, 2)), vjust = 1, color = "darkblue", size = 3) +
+  annotate("text", 
+           x = x1 + 0.05, 
+           y = 0.1, 
+           label = expression("Zone de rejet ("*alpha*" = 0.05)"), 
+           hjust = 0, 
+           vjust = -0.5, 
+           color = "darkblue") +
+  theme(legend.position="none")
+```
+La probabilité d'observer $t = `r round(t, 3)`$ ou une valeur plus extrême, supposant que $H_0$ est vraie, est $p = `r round(pr, 3)`$. Toute valeur de $t$ supérieure à la valeur critique $t_{Crit}=1.711$ est jugée peu probable et conduit au rejet de $H_0$, au niveau de signification $\alpha=0.05$. 
+
+#### Fonction t.test()
+
+La fonction **t.test()** dans l'environnement de base de R permet d'effectuer l'ensemble des opérations décrites dans ce paragraphe. Les arguments de cette fonction, appropriés pour l'examen d'une moyenne unique, sont:
+  
+* **x**: vecteur des données échantillonnales
+* **alternative**: directionnalité de l'hypothèse alternative: c("two.sided", "less", "greater")
+* **mu**: moyenne de la population, telle que proposée dans $H_0$
+* **conf.level**: $(1-\alpha)$ = 0.95 par défaut
+
+Reprenant les données générées à la section @sec-exemple7, on obtient:
+
+```{r}
+#| code-fold: false
+
+t.test(xech, 
+       alternative="greater", 
+       mu=4.7, 
+       conf.level=0.95)
+```
+
+Ces résultats reproduisent évidemment ceux obtenus précédemment.
+
+### Exemple 9: Test d'hypothèse pour une variance
+
+Selon le Bureau des Statistiques Sociales d'Haïti, la variance de l'indice de criminalité pour l'ensemble du pays est égale à 500. Un chercheur en Criminologie de l'ISTEAH, suite à des études préparatoires sur le terrain, croit qu'en Artibonite, les individus sont relativement homogènes à ce niveau, ce qui se traduirait pas une variance plus faible que dans l'ensemble du territoire Haïtien. Pour s'en convaincre, il forme un échantillon aléatoire de 100 résidents d'Artibonite et mesure chez chacun d'eux l'indice de criminalité en utilisant une échelle psychométrique standardisée. Le code R suivant permet de générer les données:
+
+```{r }
+#| code-fold: false
+
+set.seed(12345)
+subpop = subset(HaitiPop,(AGE>=15)&(DEPARTEMENT=="1"),CRIMIDX)
+xcrim = sample(subpop$CRIMIDX,100,replace=FALSE)
+xb = mean(xcrim)
+vcrim = var(xcrim)
+
+var0 = 500   
+
+```
+
+Son hypothèse, selon laquelle la variance de la population d'Artibonite est plus faible qu'à l'échelle nationale, se traduit par les hypothèses statistiques suivantes:  
+
+  - $H_0:\sigma^2 = 500$
+  - $H_1:\sigma^2 < 500$
+  
+Les statistiques suivantes décrivent les données recueillies auprès de l'échantillon:
+
+
+$$\bar{X}_{CrmIdx}=`r round(xb, 3)` \qquad s_{CrmIdx}^2=`r round(vcrim, 3)` $$
+
+On se souviendra que la distribution d'échantillonnage des variances 'standardisées' suit de très près une distribution du $\chi^2$, avec $dl=n-1$:
+  
+$$\chi^2=\frac{(n-1)s^2}{\sigma^2}$$ {#eq-chi2c}
+
+Le test d'hypothèse implique simplement le calcul du $\chi^2$ et de la probabilité d'occurrence de cette valeur ou d'une valeur plus extrême. Pour les données recueillies, on obtient:
+
+```{r echo=FALSE}
+chi <- (99*vcrim)/500
+chi
+```
+
+
+$$\chi^2=\frac{(n-1)s^2}{\sigma^2}=\frac{(100-1)`r round(vcrim, 3)`}{`r var0`}=`r round(chi, 3)`$$
+Le tableau @tbl-chi2tbl indique les valeurs critiques de $\chi_{99}^2$ dans la portion inférieure de la distribution, pour différentes valeurs de probabilités. La valeur surlignée correspond à la valeur critique que l'on devra comparer à $\chi^2=`r round(chi, 2)`$.  On constate que sous la distribution du $\chi^2$ pour $dl=n-1=99$, la valeur critique délimitant la zone de rejet de la zone de non-rejet de $H_0$ est égale à `r round(qchisq(0.05, 99), 3)`.
+
+```{r}
+#| label: tbl-chi2tbl
+#| tbl-cap: "Valeurs critiques  du Chi-Carré, en fonction du nombre de degrés de liberté et de l'aire sous la courbe, à droite. La valeur critique pertinente pour le cas présent est surlignée."
+#| warning: false
+
+show_Chi2_table(alternative = "greater")
+```
+
+
+Puisque la valeur du $\chi^2$ observé est plus extrême (vers la gauche de la distribution) que cette valeur critique, on peut rejeter $H_0$: il y a évidence à l'effet que la variance de l'indice de criminalité est plus faible en Artibonite que dans l'ensemble du pays. La @fig-chi2plt illustre la situation courante:
+
+
+```{r}
+#| label: fig-chi2plt
+#| fig-label: "Distribution du Chi-Carré"
+#| echo: false
+
+txt1 <- TeX(paste("$\\chi_{99}^2=", round(chi, 3), "$"))
+txt2 <- paste("p =    ", round(pchisq(chi, 99), 3))
+Curv_Chisq(chi, df = 99)
+text(60, 0.015, label = txt1)
+text(60, 0.012, label = txt2)
+
+
+```
+
+
+De manière alternative, la probabilité d'obtenir un tel $\chi^2$ ou une valeur plus extrême, toujours en supposant $H_0$ vraie, est donnée par la fonction **pchisq()**. Puisque le test est unilatéral gauche, on recherche la probabilité dans l'extrémité inférieure (**lower.tail=TRUE**)::
+
+```{r}
+pr <- pchisq(chi, 
+             99, 
+             lower.tail=TRUE)
+
+```
+
+$$p(\chi_{99}^2 \le `r round(chi, 3)`) = `r round(pr, 4)`$$  
+
+En utilisant le niveau de signification $\alpha=0.05$, $H_0$ est rejetée: il y a évidence à l'effet que la variance de l'indice de condition de vie dans le département d'Artibonite est inférieure à 500, la variance de cet indice au niveau de la population Haitienne. 
+
+
+```{r  echo=FALSE, eval=FALSE}
+Curv_Chisq <- function(df, x = NULL, x1 = NULL, x2 = NULL, display = c("below", "above", "between")) {
+  # Validate the display type
+  display <- match.arg(display)
+  
+  # Calculate quantiles
+  lower_percentile <- 0.001
+  upper_percentile <- 0.999
+  lower_value <- qchisq(lower_percentile, df = df)
+  upper_value <- qchisq(upper_percentile, df = df)
+  
+  # Plot the curve
+  curve(dchisq(x, df = df), 
+        from = lower_value, to = upper_value,
+        main = paste('Distribution du Chi-Carré (df = ', df, ')'),
+        ylab = 'Densité',
+        lwd = 2)
+  
+  # Add shading for below x
+  if (!is.null(x) && display == "below") {
+    x_below <- seq(lower_value, x, length.out = 1000)
+    p_below <- dchisq(x_below, df = df)
+    polygon(c(x_below, rev(x_below)), c(p_below, rep(0, length(p_below))),
+            col = adjustcolor('red', alpha = 0.3), border = NA)
+  }
+  
+  # Add shading for above x
+  if (!is.null(x) && display == "above") {
+    x_above <- seq(x, upper_value, length.out = 1000)
+    p_above <- dchisq(x_above, df = df)
+    polygon(c(x_above, rev(x_above)), c(p_above, rep(0, length(p_above))),
+            col = adjustcolor('blue', alpha = 0.3), border = NA)
+  }
+  
+  # Add shading between x1 and x2
+  if (!is.null(x1) && !is.null(x2) && display == "between") {
+    x_between <- seq(x1, x2, length.out = 1000)
+    p_between <- dchisq(x_between, df = df)
+    polygon(c(x_between, rev(x_between)), c(p_between, rep(0, length(p_between))),
+            col = adjustcolor('green', alpha = 0.3), border = NA)
+  }
+}
+
+Curv_Chisq(df = 5, x = 5, x1 = 5, x2=10, display = "between")
+
+```
+
+
+#### Fonction varTest()
+  
+La fonction **varTest()** contenue dans la librairie **EnvStats** permet de réaliser un test d'hypothèse pour une variance, tel que présenté dans les paragraphes précédents. Ses arguments sont:
+  
+* **x**: le vecteur des observations à analyser
+* **alternative**: directionnalité du test: c("two.sided", "greater", "less")("two.sided" par défaut)
+* **conf.level**: niveau de confiance (et par conséquent le niveau de signification) (0.95 par défaut)
+* **sigma.squared**: valeur de la variance proposée sous $H_0$
+
+Pour l'exemple précédent, on obtient:
+
+```{r}
+#| code-fold: false
+#| message: false
+#| warning: false
+
+library(EnvStats)
+varTest(xcrim, 
+        alternative="less",
+        conf.level=0.95,
+        sigma.squared=500)
+```
+Ces résultats sont évidemment identiques à ceux obtenus manuellement dans le paragraphe précédent.
+
+### Exemple 10: Test d'hypothèse pour une proportion {#sec-exemple10}
+
+La proportion des Haïtiens qui ont l'intention de voter pour le candidat A à l'élection présidentielle pour l'ensemble du pays s'établit à 20%, selon le plus récent sondage. Est-ce que cette proportion pourrait être différente dans le Département des Nippes, où on dispose d'un échantillon de 400 sujets?
+
+L'échantillon obtenu aléatoirement fournit les données suivantes:
+
+```{r}
+#| code-fold: false
+set.seed(12345)
+library(data.table)
+
+DT <- as.data.table(HaitiPop)                          # data.table
+subpop = DT[(AGE >= 18)&(DEPARTEMENT =="4")]$PrefPres  # Population ciblée
+xech = subpop[sample(1:length(subpop),400,replace=FALSE)]
+propA = mean(xech==1)
+
+```
+
+Au niveau de cet échantillon, la proportion des intentions de vote en faveur du candidat A est égale à $p=`r round(propA, 3)`$.  Les hypothèses statistiques sont:
+  
+  - $H_0:\pi = 0.20$
+  - $H_0:\pi \neq 0.20$
+
+L'erreur-standard des proportions, dans le cas présent, est:
+
+```{r echo=FALSE}
+sep <- sqrt((propA*(1-propA))/400)
+z <- (propA-0.20)/sep
+```
+
+$$s_p=\sqrt{\frac{p(1-p)}{n}}=\sqrt{\frac{`r propA` (1-`r propA`)}{400}} = `r round(sep, 3)`$$
+
+De la section @sec-de_prop, du chapitre @sec-chap9, on sait que la distribution d'échantillonnage des proportions est gaussienne si $p \pm 3 \times s_p \subset [0,1]$, condition qui est largement respectée dans la présente situation. On calcule donc:
+
+$$Z=\frac {p-\pi}{s_p}=\frac {`r propA`-0.20}{`r round(sep, 3)`}=`r round(z, 3)`$$
+
+La probabilité d'obtenir $p=`r round(propA, 3)`$ ou une proportion de votes pour le candidat A plus extrème, en tirant un échantillon de *n*=400 sujets est:
+
+```{r}
+pr <- 2 * pnorm(abs(z), lower.tail=FALSE)
+
+```
+
+$$p(z \ge `r round(abs(z), 3)`) = `r round(pr, 4)`$$  
+
+Les résultats indiquent que si $H_0$ est vraie, la probabilité d'obtenir une proportion en faveur du Candidat A égale ou plus extrême que la proportion observée (`r format(round(b.propA$Observed,3),scientific=FALSE)`) est égale à `r format(round(b.propA$p.value, 3), scientific = FALSE)`. En conséquence, on `r if(b.propA$p.value<=0.05){"rejette "}else{"ne rejette pas "}` $H_0$. On peut donc conclure que la population du Nord se démarque significativement de l'ensemble de la population haïtienne, en ce qui concerne le Candidat A. La @fig-propZ résume la situation.  
+
+```{r}
+#| label: fig-propZ
+#| fig-cap: "Aire sous la courbe normale correspondant au score Z observé. "
+#| echo: false
+#| warning: false
+#| error: false
+
+p <- draw_n(z = z, alternative = "two.sided" )
+x1 <- qnorm(c(0.025, 0.975))
+txt1 <- c("Zone de rejet", expression(alpha/2 == 0.025))
+
+p + geom_segment(aes(x = x1[1], 
+                     y = 0,
+                     xend = x1[1],
+                     yend = 0.055),
+                     color = "darkblue") +
+  geom_segment(aes(x = x1[2], 
+                     y = 0,
+                     xend = x1[2],
+                     yend = 0.055),
+                     color = "darkblue") +
+  geom_text(aes(x = x1[1], y = 0, label = round(x1[1], 2)), vjust = 1, color = "darkblue") +
+  geom_text(aes(x = x1[2], y = 0, label = round(x1[2], 2)), vjust = 1, color = "darkblue") +
+#  geom_text(aes(x = z, y = 0, label = round(z, 2)), vjust = 1, color = "darkblue") +
+  annotate("text", 
+           x = x1[1] + 0.05, 
+           y = 0.13, 
+           label = txt1, 
+           hjust = c(1.2, 1.2), 
+           vjust = c(0.5, 1.5), 
+           color = "darkblue") +
+    annotate("text", 
+           x = x1[2] + 0.05, 
+           y = 0.13, 
+           label = txt1, 
+           hjust = c(-.1, -.1),  
+           vjust = c(0.5, 1.5),
+           color = "darkblue") +
+  theme(legend.position="none")
+```
+
+La probabilité d'observer $z = `r round(z, 3)`$ ou une valeur plus extrême, supposant que $H_0$ est vraie, est $p = `r round(pr, 3)`$. Toute valeur de $|z|$ supérieure à la valeur critique $z_{Crit}=1.96$ est jugée peu probable et conduit au rejet de $H_0$, au niveau de signification $\alpha=0.05$. Notons qu'il s'agit ici d'un test bilatéral et que par conséquent, le signe de $z$ n'importe pas.
+
+
+#### Fonction prop.test()
+
+La fonction **prop.test()** de l'environnement de base de R permet d'effectuer un test d'hypothèse portant sur une proportion, mais en utilisant la distribution du $\chi^2$, plutôt que la distribution normale. Les conclusions qu'on en tire sont identiques dans les deux cas. Ses arguments sont:
+  
+* **X** : le nombre de 'succès' observés dans l'échantillon
+* **n** : le nombre d'observations (taille de l'échantillon)
+* **p** : Proportion de la population, telle que proposée sous $H_0$
+* **alternative**: directionnalité du test: c("two.sided", "greater", "less")
+  
+Pour l'exemple 10 (@sec-exemple10), on trouve:
+
+```{r}
+x <- sum(xech==1)
+n <- length(xech)
+p <- 0.20
+res <- prop.test(x,             # nombre de succès
+                 n,             # nombre total d'observations
+                 p,             # proportion proposée dans H0
+                 alternative = "two.sided")
+res
+```
+
+Ces résultats sont conformes à ceux obtenus précédemment. De plus, on obtient l'intervalle de confiance de la proportion: 
+```{r}
+#| echo: false
+
+lims <- res$conf.int
+```
+
+
+$$C\left [`r round(lims[1], 3)` \le \pi \le `r round(lims[2], 3)`\right ]=95\% $$ 
+
+## Exercices
+
+1. Le comité administratif de la Grand'Anse, désireux d'attirer l'attention du Ministre des Affaires Sociales, affirme qu'au niveau du département, les conditions de vie sont meilleures que dans l'ensemble du pays.  En effet, d'après un rapport de l'OCDE, l'indice CondxVie moyen serait égal à 5.2 au niveau national. Pour vérifier les dires du comité administratif, le Ministre demande à un chercheur de l'ISTEAH d'effectuer une recherche qui dispose du financement lui permettant un échantillon de 150 sujets. Les données recueillies par ce chercheur sont les suivantes:
+
+
+2. Le Comité Administratif du département du Nord-Ouest (DEPARTEMENT=="7") pourrait-il affirmer que l'indice de Condition de Vie moyen dans leur département diffère de la moyenne nationale, telle que quantifiée par l'OCDE?
+
+3. Dans Le Nouvelliste, un titre attire l'attention du Ministre de la Sécurité Publique: '**L'indice de criminalité est nettement plus faible dans le département du Centre que dans l'Artibonite**'. Si cette assertion était véridique, il pourrait déplacer du personnel du Centre vers l'Artibonite, de manière à y réduire la criminalité. Le Ministre vous offre un contrat de recherche afin de vérifier la situation.  Votre plan de recherche est donc:
+  - estimer la moyenne de l'indice de criminalité en Artibonite. Votre budget de recherche vous permet un échantillon de 300 individus. Cette moyenne deviendra celle proposée dans l'hypothèse nulle, à l'étape suivante.
+  - effectuer un test d'hypothèse afin de vérifier les faits exposés par Le Nouvelliste.
+  - Faire rapport au Ministre sur l'état de la situation.
+  
+4. Pourrait-on croire que l'indice de condition de vie chez les femmes âgées de 60 ans et plus est inférieur à la moyenne nationale, établie à 6.5, selon l'OCDE? Un échantillon de 30 sujets est mis à votre disposition. 
+  
+5. Le candidat B aux élections présidentielles affirme haut et fort qu'il obtiendra au moins 51% des votes, à l'échelle nationale, aux prochaines élections et qu'il sera le prochain président. Formez un échantillon de 300 électeurs, et vérifiez les affirmations du candidat.
+
+6. Un groupe de députés chargé d'examiner l'intérêt de la population pour une nouvelle Constitution croit que le consensus en défaveur de tout changement constitutionnel est nettement plus important dans le département du Nord que dans le reste du pays, où on note un indice de consensus égal à 0.53. Utilisez un échantillon de 250 sujets en âge de voter pour vérifier cette assertion.
+
+
+## Solutionnaire
+
+>1. Le comité administratif de la Grand'Anse, désireux d'attirer l'attention du Ministre des Affaires Sociales, affirme qu'au niveau du département, les conditions de vie sont meilleures que dans l'ensemble du pays.  En effet, d'après un rapport de l'OCDE, l'indice CondxVie moyen serait égal à 5.2 au niveau national. Pour vérifier les dires du comité administratif, le Ministre demande à un chercheur de l'ISTEAH d'effectuer une recherche qui dispose du financement lui permettant un échantillon de 150 sujets. Les données recueillies par ce chercheur sont les suivantes:
+  
+```{r 06-Chap6-22}
+subpop = subset(HaitiPop,(DEPARTEMENT=="3"),CondxVie)
+idx = sample(1:length(subpop$CondxVie),150,replace=FALSE)
+xech = subpop$CondxVie[idx]
+```
+Le chercheur de l'ISTEAH vous accorde un contrat pour l'analyse des données obtenues. Procédez à l'analyse et formulez les conclusions.
+
+Les hypothèses statistiques:  
+
+  - $H_0:\mu = 5.2$
+  - $H_0:\mu > 5.2$
+
+```{r 06-Chap6-23}
+mu0 = 5.2
+xb = mean(xech)
+cat("Moyenne = ",xb)
+#
+library(wBoot)
+b.means = boot.one.per(xech,mean,null.hyp=5.2,alternative="greater",conf.level=0.95,R=100000)
+print.boot.one(b.means)
+```
+  
+Les résultats indiquent que si $H_0$ est vraie, la probabilité d'obtenir une moyenne de CondxVie égale ou plus extrême que la moyenne observée ($\bar X=$ `r (round(b.means$Observed,3))`) est égale à `r b.means$p.value`. En conséquence, on `r if(b.means$p.value<=0.05){"rejette "}else{"ne rejette pas "}` $H_0$. On peut donc conclure que la population du département de la Grand'Anse a de meilleures conditions de vie que dans l'ensemble du pays, ce qui confirme les dires du comité administratif.
+
+>2. Le Comité Administratif du département du Nord-Ouest (DEPARTEMENT=="7") pourrait-il affirmer que l'indice de Condition de Vie moyen dans leur département diffère de la moyenne nationale, telle que quantifiée par l'OCDE?
+  
+```{r 06-Chap6-24}
+subpop = subset(HaitiPop,(DEPARTEMENT=="7"),CondxVie)
+idx = sample(1:length(subpop$CondxVie),150,replace=FALSE)
+xech = subpop$CondxVie[idx]
+```
+
+```{r 06-Chap6-25}
+mu0 = 5.2
+xb = mean(xech)
+cat("Moyenne = ",xb)
+```
+Les hypothèses statistiques:  
+
+  - $H_0:\mu = 5.2$
+  - $H_0:\mu > 5.2$
+  
+
+```{r 06-Chap6-26}
+library(wBoot)
+b.means = boot.one.per(xech,mean,null.hyp=5.2,alternative="greater",conf.level=0.95,R=100000)
+print.boot.one(b.means)
+```
+  
+Les résultats indiquent que si $H_0$ est vraie, la probabilité d'obtenir une moyenne de CondxVie égale ou plus extrême que la moyenne observée ( $\bar X=$ `r (round(b.means$Observed,3))`) est égale à `r b.means$p.value`. En conséquence, on `r if(b.means$p.value<=0.05){"rejette "}else{"ne rejette pas "}` $H_0$. On peut donc conclure que la population du département de la Grand'Anse a de meilleures conditions de vie que dans l'ensemble du pays, ce qui confirme les dires du comité administratif.
+
+
+>3. Dans Le Nouvelliste, un titre attire l'attention du Ministre de la Sécurité Publique: '**L'indice de criminalité est nettement plus faible dans le département du Centre que dans l'Artibonite**'. Si cette assertion était véridique, il pourrait déplacer du personnel du Centre vers l'Artibonite, de manière à y réduire la criminalité. Le Ministre vous offre un contrat de recherche afin de vérifier la situation.  Votre plan de recherche est donc:
+  - estimer la moyenne de l'indice de criminalité en Artibonite. Votre budget de recherche vous permet un échantillon de 300 individus. Cette moyenne deviendra celle proposée dans l'hypothèse nulle, à l'étape suivante.
+  - effectuer un test d'hypothèse afin de vérifier les faits exposés par Le Nouvelliste.
+  - Faire rapport au Ministre sur l'état de la situation.
+
+
+```{r 06-Chap6-27}
+# Estimation de la moyenne de CRIMIDX en Artibonite
+subpop = subset(HaitiPop,((AGE>=15)&(DEPARTEMENT=="1")),CRIMIDX)
+idx = sample(1:length(subpop$CRIMIDX),300,replace=FALSE)
+xech = subpop$CRIMIDX[idx]
+#
+library(wBoot)
+b.moy1 = boot.one.per(xech,mean,null.hyp=NULL,conf.level=0.95,R=100000)
+print.boot.one(b.moy1)
+mu0 = b.moy1$Observed
+```
+
+Les hypothèses statistiques:  
+
+  - $H_0:\mu =$ `r round(mu0,3) `
+
+  
+  - $H_0:\mu <$ `r round(mu0,3) `
+  
+```{r 06-Chap6-28}
+
+# CRIMIDX plus faible dans le département du Centre?
+#
+subpop = subset(HaitiPop,((AGE>=15)&(DEPARTEMENT=="2")),CRIMIDX)
+idx = sample(1:length(subpop$CRIMIDX),300,replace=FALSE)
+xech = subpop$CRIMIDX[idx]
+#
+b.moy2 = boot.one.per(xech,mean,null.hyp=mu0,conf.level=0.95,R=100000)
+print.boot.one(b.moy2)
+
+```
+L'estimation de la moyenne de CRIMIDX en Artibonite prend la forme d'un intervalle de confiance:
+  
+C[`r round(b.moy1$Confidence.limits[1],3)` $< \mu <$ `r round(b.moy1$Confidence.limits[2],3)`]=95%
+  
+On peut donc considérer que $\mu_0 =$ `r round(b.moy1$Observed,3)`.  
+
+Les résultats indiquent que si $H_0$ est vraie, la probabilité que la moyenne de CRIMIDX pour la population du département du Centre soit égale ou plus extrême que la moyenne observée ($\bar X=$ `r (round(b.moy2$Observed,3))`) est égale à `r b.moy2$p.value`. En conséquence, on `r if(b.moy2$p.value<=0.05){"rejette "}else{"ne rejette pas "}` $H_0$. On peut donc conclure que la population du département du Centre a une propension à la criminalité plus faible que la population d'Artibonite, ce qui confirme les faits rapportés par Le Nouvelliste.
+  
+  
+>4. Pourrait-on croire que l'indice de condition de vie chez les femmes âgées de 60 ans et plus est inférieur à la moyenne nationale, établie à 6.5, selon l'OCDE? Un échantillon de 30 sujets est mis à votre disposition. 
+  
+Les hypothèses statistiques:  
+
+  - $H_0:\mu = 6.5$ 
+  - $H_0:\mu < 6.5$ 
+
+```{r 06-Chap6-29}
+# Estimation de la moyenne de CondxVie chez les femmes âgées de 60+ ans
+subpop = subset(HaitiPop,(AGE>=60),CondxVie)
+idx = sample(1:length(subpop$CondxVie),30,replace=FALSE)
+xech = subpop$CondxVie[idx]
+#
+library(wBoot)
+b.moy = boot.one.per(xech,mean,null.hyp=6.5,alternative="less",conf.level=0.95,R=100000)
+print.boot.one(b.moy)
+
+```
+Les résultats indiquent que si $H_0$ est vraie, la probabilité que la moyenne de CondxVie chez les femmes âgées de 60+ ans soit égale ou plus extrême que la moyenne observée ($\bar X=$ `r (round(b.moy$Observed,3))`) est égale à `r b.moy$p.value`. En conséquence, on `r if(b.moy$p.value<=0.05){"rejette "}else{"ne rejette pas "}` $H_0$. On peut donc conclure qu'il `r if(b.moy$p.value<=0.05){"y a évidence "}else{"n'y a pas d'évidence "}` indiquant que la population des femmes âgées de 60+ ans a un indice de condition de vie inférieur à ce qu'on note au niveau national.
+
+
+>5. Le candidat B aux élections présidentielles affirme haut et fort qu'il obtiendra 51% des votes, à l'échelle nationale, aux prochaines élections et qu'il sera le prochain président. Formez un échantillon de 300 électeurs, et vérifiez les affirmations du candidat.
+
+Les hypothèses statistiques:  
+
+  - $H_0:\pi = 0.51$ 
+  - $H_0:\pi < 0.51$ 
+
+```{r 06-Chap6-30}
+subpop = subset(HaitiPop,(AGE>=18),PrefPres)
+idx = sample(1:length(subpop$PrefPres),300,replace=FALSE)
+xech = subpop$PrefPres[idx]
+#
+# Calcul de la proportion d'intentions de vote pour le CandidatB (#2)
+CalcProp = function(x){
+  prop = mean(x==2)
+  return(prop)
+}
+#
+library(wBoot)
+b.prop = boot.one.per(xech,CalcProp,null.hyp=0.51,alternative="less",conf.level=0.95,R=100000)
+print.boot.one(b.prop)
+```
+Les résultats indiquent que si $H_0$ est vraie, la probabilité que la proportion des votes en faveur du Candidat B soit égale ou plus extrême que la proportion observée ($\pi=$ `r (round(b.prop$Observed,3))`) est égale à `r b.prop$p.value`. En conséquence, on `r if(b.prop$p.value<=0.05){"rejette "}else{"ne rejette pas "}` $H_0$. On peut donc conclure que le Candidat B `r if(b.moy$p.value<=0.05){"n'a pas raison "}else{"a raison "}` lorsqu'il affirme qu'il pourrait être le prochain président.
+
+
+>6. Un groupe de députés chargé d'examiner l'intérêt de la population pour une nouvelle Constitution croit que le consensus en défaveur de tout changement constitutionnel est nettement plus important dans le département du Nord que dans le reste du pays, où on note un indice de consensus égal à 0.53. Utilisez un échantillon de 250 sujets en âge de voter pour vérifier cette assertion.
+
+  
+Les hypothèses statistiques:  
+
+  - $H_0:Consensus = 0.53$ 
+  - $H_0:Consensus < 0.53$ 
+
+```{r 06-Chap6-31}
+subpop = subset(HaitiPop,(AGE>=18),OpinConst)
+idx = sample(1:length(subpop$OpinConst),250,replace=FALSE)
+xech = subpop$OpinConst[idx]
+#
+# Calcul du Consensus
+library(agrmt)
+
+Constabl = function(x){
+  tbl = table(x)
+  cons = consensus(tbl)
+  return(cons)
+}
+#
+library(wBoot)
+b.cons = boot.one.per(xech,Constabl,null.hyp=0.53,alternative="less",conf.level=0.95,R=100000)
+print.boot.one(b.cons)
+```
+Les résultats indiquent que si $H_0$ est vraie, la probabilité que le consensus à l'encontre de la nouvelle Constitution soit égal ou plus extrême que le consensus observée (Cons= `r (round(b.cons$Observed,3))`) est égale à `r b.cons$p.value`. En conséquence, on `r if(b.cons$p.value<=0.05){"rejette "}else{"ne rejette pas "}` $H_0$. On peut donc conclure que l'indice de consensus dans le département du Nord `r if(b.cons$p.value<=0.05){"indique une tendance à la dissension par rapport au projet de Constitution. "}else{"n'est pas différent de la population générale. "}` 
+
+
+## Appendice: fonctions utiles
+
+  
+```{#lst-resampmean .sql lst-cap="resamp.mean()"}
+# Ré-échantillonnage: moyenne unique
+# Arguments: 
+# - x : Observations
+# - k : Nombre de réplications 
+# - mu : Moyenne de la population (option)  
+# Sortie:
+# - means : moyennes observées pour chaque ré-échantillon
+# - mean : moyenne des moyennes
+# - se : écart-type des moyennes (erreur-standard)
+# - meansCtr: moyennes centrées, si mu est spécifié
+
+resamp.mean <- function(x, k = 1000, mu = NULL){
+  m <- replicate(k,
+                 mean(sample(x, 
+                             length(x), 
+                             replace = TRUE)))
+  muxb <- mean(m)
+  sexb <- sd(m)
+  if(!is.null(mu)){m - mean(x) + mu}
+  return(list("means" = m, "mean" = muxb, "se" = sexb, "meansCtr" = mu))
+}
+```

@@ -1,0 +1,472 @@
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| error: false
+
+source("global.R")
+```
+
+# Introductions aux Probabilités
+
+## Objectifs d'apprentissage
+
+À la fin de cette section, vous devriez être en mesure de:
+
+1.  Définir la notion de probabilité et faire la distinction entre
+    probabilité théorique et probabilité fréquentiste.
+2.  Spécifier l'espace échantillonnal et sa taille.
+3.  Spécifier un événement et la fréquence de son occurrence.
+4.  Définir une permutation et en calculer le nombre
+5.  Définir une combinaison et en calculer le nombre
+6.  Utiliser correctement la règle d'addition de probabilités.
+7.  Utiliser correctement la règle de multiplication de probabilités.
+8.  Utiliser un tableau de contingence pour calculer les probabilités
+    marginales, jointes et conditionnelles.
+9.  Appliquer la règle de Bayes\
+10. Faire la lecture d'un arbre de probabilités.
+11. Construire un tableau présentant une distribution de fréquences
+12. Simuler différentes expériences aléatoires:
+
+-   Lancer d'une pièce de monnaie
+-   Lancer de dés (1 et 2)
+-   Sélection au hasard d'objets dans une urne
+-   Sélection de cartes dans un jeu standard
+
+## Probabilités: Définitions de base
+
+Dans cette section,nous abordons les notions pertinentes au calcul de
+probabilités dans diverses situations. Une compréhension ferme de ces
+notions est essentielle à l'étude des méthodes d'analyse inférentielles.
+
+```{r 02-Chap2-4,message=FALSE,echo=FALSE}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(randtests, ggvenn, VennDiagram, arrangements, dplyr, tidyr, formatR, kableExtra, isteahMAT104, openintro, Rfast, extraDistr)
+```
+
+### Expérience aléatoire, Événement, et Espace échantillonnal
+
+Afin d'illustrer les notions présentées dans les paragraphes qui
+suivent, considérons des situations (ou épreuves) très simples: le
+lancer d'une ou de plusieurs pièces de monnaie, le lancers de dés,
+extraire quelques billes d'une urne, ou tirer quelques cartes d'un jeu
+de cartes standard.
+
+Le lancer d'une pièce de monnaie est une expérience aléatoire qui peut
+se traduire par l'un ou l'autre de deux résultats ou **événements**
+possibles: la pièce tombe du côté **PILE**, ou elle tombe du côté
+**FACE**. Lequel de ces deux événements surviendra est purement le fruit
+du hasard. L'ensemble des événements possibles lors d'une expérience
+aléatoire constitue l'espace échantillonnal.
+
+De la même manière, le lancer d'un dé (expérience aléatoire) se traduit
+par l'un ou l'autre des six événements possibles (espace
+échantillonnal): le dé affiche la face 1, 2, 3, 4, 5 ou 6. Lequel de ces
+événements surviendra est également le fruit du hasard.
+
+Donc formellement:
+
+-   **Expérience aléatoire**: épreuve donnant lieu à un événement dont
+    la nature est le produit du hasard. On réfère ici à toute action se
+    traduisant par un résultat ou événement particulier: lancer d'une
+    pièce, d'un dé, faire passer un test, etc. De fait, toute action
+    conduisant à des observations qui sont le fruit du hasard peut être
+    considérée comme étant une expérience aléatoire.
+
+-   **Espace échantillonnal**: ensemble exhaustif des résultats
+    possibles d'une expérience aléatoire. Dans le cas du lancer d'une
+    pièce de monnaie, on représentera l'espace échantillonnal par :
+    **S={Pile, Face}**. Dans le cas du lancer d'un dé régulier, on
+    aurait: **S={1, 2, 3, 4, 5, 6}**. Ces espaces échantillonnaux se
+    composent d'événements discrets: on peut dénombrer les éléments
+    qu'ils contiennent. Dans d'autres cas, l'espace échantillonnal est
+    composé d'événements continus dont le nombre est infini. Par
+    exemple: S = {$-\infty$,...,+$\infty$}, ou S = {$0$,...,+$\infty$},
+    ou même S = {0,...,1.0}.
+
+-   **Événement**: le résultat d'une expérience aléatoire. Il s'agit
+    d'un élément particulier faisant partie de l'espace échantillonnal,
+    donc un résultat parmi l'ensemble des résultats possibles. Étant le
+    fruit du hasard, on ne peut pas déterminer à l'avance l'événement
+    qui se produira. Par contre, on peut calculer la probabilité qu'un
+    événement particulier se produise: **P(E) = ?**
+
+    -   **Événements indépendants**: Deux événements sont dits
+        **indépendants** si l'occurrence de l'un n'affecte en rien la
+        probabilité d'occurrence de l'autre. Par exemple, en lançant une
+        pièce de monnaie deux fois, la probabilité d'obtenir FACE au
+        premier lancer n'a aucun impact sur la probabilité qu'au second
+        lancer, on obtienne le même résultat. De même, en lançant deux
+        dés, la probabilité de voir apparaître un '6' sur le premier dé
+        n'a aucun impact sur ce qu'on observera sur le second. Ou
+        encore, les résultats d'une loterie sont indépendants d'un
+        tirage à l'autre: ce n'est pas parce que vous n'avez jamais
+        gagné quoi que ce soit à la loterie nationale, après y avoir
+        participé chaque semaine pendant 20 ans que vos chances de
+        gagner 'bientôt' sont plus grandes! Dans la vie courante, de
+        nombreuses superstitions sont basées sur le fait de nier
+        l'indépendance entre des événements réellement indépendants.
+
+    -   **Événements dépendants**: Deux événements sont dits
+        **dépendants** si l'occurrence de l'un affecte la probabilité
+        d'occurrence de l'autre. Par exemple, le fait de tirer (sans
+        remise) le Roi de Cœur d'un jeu de cartes standard réduit la
+        probabilité d'obtenir un autre Roi du même jeu de cartes
+        lorsqu'on tire une seconde carte. Lors du tirage de la première
+        carte, il y avait 4 Rois dans un jeu de 52 cartes; mais lors du
+        second tirage, si un Roi a été obtenu au premier tirage, il n'en
+        reste plus que 3 dans le jeu qui ne contient plus que 51 cartes.
+        Par contre, si la première carte (Roi de Coeur) est replacée
+        dans le jeu avant de tirer la seconde carte, alors les
+        événements 'obtenir un roi pour première carte' et 'obtenir un
+        roi pour seconde carte' sont indépendants: dans cette expérience
+        aléatoire, les mots-clés sont **sans remise**, et **avec
+        remise**: une expérience aléatoire sans remise se traduit par
+        des événements dépendants, alors qu'une expérience aléatoire
+        avec remise produit des événements indépendants.
+
+    -   **Événements mutuellement exclusifs**: Deux événements sont dits
+        **mutuellement exclusifs** s'ils ne peuvent survenir en même
+        temps. Par exemple, en tirant une carte d'un jeu standard, les
+        événements 'obtenir un Coeur' et 'obtenir une carte noire' sont
+        mutuellement exclusifs, car une carte ne peut pas être 'noire'
+        et 'Coeur' à la fois.
+
+    -   **Événements non mutuellement exclusifs**: Lorsque deux
+        événements ne sont pas mutuellement exclusifs, il peuvent
+        survenir simultanément. Par exemple, un événement défini comme
+        'un étudiant suit un cours de psychologie' et un second
+        événement comme 'un étudiant suit un cours de mathématiques'
+        sont deux événements qui peuvent survenir en même temps: le
+        programme d'étude peut très bien inclure ces deux cours! Il
+        s'agit donc d'événements non mutuellement exclusifs.
+
+-   **Variable aléatoire**: Ce terme reviendra continuellement dans les
+    discussions à venir. Une variable aléatoire est une variable dont la
+    valeur est le résultat d'une expérience aléatoire, et en
+    conséquence, le fruit du hasard. Elle est donc définie sur
+    l'ensemble des résultats possibles d'une expérience aléatoire.
+    Certaines variables aléatoires sont discrètes, d'autres continues.
+    Toutes les variables utilisées dans le cadre d'une recherche
+    scientifique sont des variables aléatoires, sauf celles qui forment
+    des facteurs, ou des variables indépendantes manipulées par le
+    chercheur! En calculant la probabilité de chaque valeur possible
+    d'une variable aléatoire, on obtient une distribution de
+    probabilités. Selon la nature de l'expérience aléatoire et des
+    événements qu'elle génère, on obtient différentes distributions de
+    probabilités dont plusieurs seront explorées dans ce document.
+
+## Éléments de calcul de probabilités
+
+En supposant une pièce de monnaie qui est bien équilibrée (non truquée),
+on a une chance sur 2 que l'événement observé lors d'un lancer de cette
+pièce soit PILE, et une chance sur 2 qu'il soit FACE. On peut donc
+exprimer cette situation par:
+
+$$P(PILE) = 1/2$$ $$P(FACE)=1/2$$
+
+Les événements **PILE** et **FACE** forment l'espace échantillonnal pour
+le lancer d'une pièce de monnaie (l'expérience aléatoire). En lançant
+cette pièce, on ne sait pas de quel côté elle tombera, mais on sait que
+le résultat sera **PILE** avec une probabilité égale à 0.5, ou **FACE**,
+aussi avec une probabilité égale à 0.5. La somme des probabilités
+associées à chacun des événements composant l'espace échantillonnal est
+nécessairement égale à 1.0. Cette définition est conforme à l'idée
+qu'une probabilité est le rapport entre le **nombre d'occurrences d'un
+événement donné (nE)** et le **nombre total d'événements possibles
+(nS)**, tel que formalisé par l'équation @eq-prob1.
+
+$$P(E)=nE/nS$$ {#eq-prob1}
+
+Ce qui est implicite dans cette définition, c'est que pour pouvoir
+déterminer la probabilité d'un événement, il faut être capable de
+compter le nombre de 'succès' (succès = l'événement se produit), de même
+que le nombre d'événements possibles (l'ensemble des événements qui
+pourraient se produire lors d'une expérience aléatoire, soit la taille
+de l'espace échantillonnal). Ces deux nombres sont toujours au coeur
+d'un exercice de calcul de probabilités, quelle que soit sa complexité.
+Dans la section suivante, nous présentons les éléments pertinents à
+l'obtention de ces nombres.
+
+### Calcul de **nE** et de **nS**
+
+Pour pouvoir calculer une probabilité, il est nécessaire de
+comptabiliser les **nE** 'succès' et les **nS** événements possibles.
+Souvent, il suffit d'un peu de réflexion pour y parvenir, ou d'un peu
+d'aide informatique!.
+
+On sait qu'en lançant une pièce de monnaie, deux résultats sont
+possibles: PILE, ou FACE. Donc dans ce cas, l'espace échantillonnal est
+**S = {PILE, FACE}**, **nS = 2**, et le résultat d'un lancer étant soit
+PILE, soit FACE, **nE = 1** dans chacun des cas.
+
+Si deux pièces de monnaie sont lancées, l'espace échantillonnal
+s'agrandit: **S = {PP,PF,FP,FF}: nS = 4**. Dans ce cas, l'événement peut
+prendre différentes formes: obtenir 2 FACEs, ou 2 PILEs, ou une
+combinaison PILE/FACE ou FACE/PILE. Si l'événement étudié est PILE/PILE,
+alors nE = 1. Si on recherche une combinaison des deux résultats
+possibles, alors nE = 2.
+
+Quel serait l'espace échantillonnal lorsqu'on tire une carte d'un jeu
+standard? Un jeu standard contient 52 cartes, et cet ensemble forme
+l'espace échantillonnal: pour chacun de 'Pique', 'Coeur', 'Carreau',
+'Trèfle', on a l'As, 2, 3, 4, 5, 6, 7, 8, 9, 10, Valet, Dame, et Roi,
+soit 13 cartes par série, pour un total de nS = 52. Si ce que l'on
+recherche en tirant une carte est la couleur 'Rouge', alors nE = 26 (13
+cartes de Coeur + 13 cartes de Carreau).
+
+L'espace échantillonnal correspondant au lancer d'un dé est: **S = {1,
+2, 3, 4, 5, 6}**. Donc nS = 6. Si l'événement recherché est une valeur
+supérieure à 4, alors nE = 2. Si deux dés sont lancés et que l'on
+considère la somme des deux observations, alors l'espace échantillonnal
+se compose de 36 événements possibles:
+
+```{r 02-Chap2-6, echo=FALSE}
+
+x <- matrix(rep(1:6,6),nrow=6,byrow=TRUE)
+x <- x + t(x)
+colnames <- 1:6
+rownames <- 1:6
+x
+```
+
+Dans un tel cas, la probabilité que la somme des deux dés soit égale ou
+supérieure à 10 est 6/36: trois sommes sont égale à 10, deux sont égales
+à 11 et une seule est égale à 12.
+
+Tous les exemples précédents impliquent des situations simples où les
+événements possibles sont discrets. L'espace échantillonnal est fini.
+Dans beaucoup d'autres situations, les événements impliquent des valeurs
+**continues**, et l'espace échantillonnal est **INFINI**! Par exemple,
+si l'expérience aléatoire consiste pour un individu à effectuer le
+trajet entre la maison et le bureau, même si le temps requis varie entre
+15 et 30 minutes, il existe un nombre infini de valeurs possibles, en
+supposant qu'il soit possible de mesurer ce temps avec une précision de
+$1.0\times10^{-1,000,000,000,000}$ de nano-seconde, ce qui est encore
+infiniment loin d'un nombre infiniment petit! Des stratégies seront
+développées plus tard pour permettre l'étude de ces cas.
+
+### Quelques exemples simples:
+
+Une probabilité **théorique** est définie par:
+
+$$P(E)=\frac{Nombre~d'occurrences~de~l'événement~E}{Nombre~d'éléments~composant~l'espace~Échantillonnal}=\frac{nE}{nS}$$ {#eq-probdef1}
+
+1.  En lançant un dé, quelle est la probabilité d'obtenir un 6:
+
+$$P(6)=\frac{nE}{nS}=\frac{1}{6}=0.17$$
+
+2.  Dans un jeu de 52 cartes, on tire une carte. Quelle est la
+    probabilité d'obtenir un Cœur (E~1~) ou un As de pique (E~2~) ?
+
+$$P(Coeur~OU~As~de~Pique)=\frac{nE_1}{nS_1}+\frac{nE_2}{nS_2}=\frac{13}{52}+\frac{1}{52}=\frac{14}{52}=0.27$$
+
+3.  Dans un jeu de 52 cartes, on tire 2 cartes, séquentiellement, en
+    replaçant la première carte après avoir pris note de son contenu.
+    Quelle est la probabilité d'obtenir un Cœur (E~1~) et un As de pique
+    (E~2~)?
+
+$$P(Coeur~ET~As~de~Pique)=\frac{nE_1}{nS_1}\times \frac{nE_2}{nS_2}=\frac{13}{52}\times\frac{1}{52}=\frac{13}{2704}=0.0048$$
+
+Notez ici la relation entre **OU**, impliquant la **somme** des
+probabilités des deux événements, et **ET**, qui implique le **produit**
+de ces probabilités. Nous venons de rencontrer deux règles importantes
+du calcul des probabilités: la règle d'addition, et la règle de
+multiplication d'événements indépendants. Nous y reviendrons sous peu.
+
+#### Exemple 1:
+
+Supposons que les mots de passe permettant d'accéder à un fichier
+spécifique sont composés de 3 lettres majuscules. Quelle est la
+probabilité qu'un mot de passe choisi au hasard ne comporte que des
+lettres différentes.
+
+##### **Solution**:
+
+Dans la mesure du possible, nous offrirons deux types de solution: l'une
+obtenue par simulation informatique (solution empirique), et l'autre par
+calcul utilisant des formulations mathématiques (solution théorique).
+
+###### Par simulation:
+
+En prenant un échantillon de trois lettres majuscules parmi les 26
+lettres disponibles, s'assurant que l'échantillonnage se fait **avec
+remise** pour permettre les répétitions de lettres, on peut effectuer
+des comparaisons logiques de chaque paire de lettres sélectionnées afin
+de déterminer si elles sont différentes l'une de l'autre. Si c'est le
+cas, on a un 'succès'. En répétant l'exercice un nombre infini de fois
+(ie un GRAND nombre de fois!), on obtient une **approximation** de la
+probabilité recherchée. Plus le nombre de répétitions est élevé, plus
+l'approximation se rapproche de la probabilité exacte. Le code R suivant
+permet une telle simulation. Exécutez ce code en spécifiant un nombre
+croissant de réplications (**nrep**). Quelle est la probabilité estimée
+d'obtenir 3 lettres différentes, dans ces conditions?
+
+```{r}
+#| code-fold: false
+
+nrep <- 1e+05  # Nombre de réplications:  nS
+ok <- 0        # Initialisation du compteur de 'succès'
+for (i in 1:nrep) {
+  x <- sample(LETTERS[1:26], 3, replace = TRUE)
+  ok <- ok + (length(unique(x)) == 3)   # nE
+}
+cat("Probabilité = ", ok/nrep)
+ 
+```
+
+Pour obtenir réponse à la question posée, un 'succès' a été défini par
+le fait que la longueur (**length()**) de la liste des items uniques
+(**unique()**) est égale à 3. Toute autre valeur impliquerait une
+répétition de lettres.
+
+::: {.warning style="background-color:#E9D8FD; color: #69337A; border-left: solid #805AD5 4px; border-radius: 4px; padding:0.7em;"}
+<span>
+
+<p style="margin-top:1em; text-align:left">
+
+<b>Note: code alternatif</b>
+
+</p>
+
+<p style="margin-left:1em;">
+
+Une manière plus compacte (et potentiellement plus rapide) d'obtenir le
+même résultat pourrait se formuler ainsi:
+
+```{r}
+#| code-fold: false
+
+nrep = 100000    # Nombre de réplications:  nS
+x <- replicate(nrep,
+               sample(LETTERS[1:26], # Espace échantillonnale
+                      3,             # Nombre de lettres
+                      replace=TRUE))
+ok <- mean(apply(x, 
+                 MARGIN=2, 
+                 function(x)length(unique(x))==3)) # nE
+cat("Probabilité = ", ok)  # nE/nS
+
+```
+
+Dans cette dernière solution, la fonction **apply()** permet d'obtenir
+l'évaluation de chaque échantillon de 3 lettres (ie détermination du
+nombre de lettres différentes), de manière récursive pour chaque colonne
+d'un dataframe (**x**) composé de 3 rangées par **nrep** colonnes. On
+évite ainsi l'utilisation d'une boucle, souvent plus lente.
+
+</p>
+
+<p style="margin-bottom:1em; margin-right:1em; text-align:right; font-family:Georgia">
+
+</b></i>
+
+</p>
+
+</span>
+:::
+  
+  
+Cette probabilité, obtenue en répétant l'expérience aléatoire un grand
+nombre de fois et en établissant le rapport entre le nombre de 'succès'
+(nE) et le nombre (N) de répétition de l'expérience est souvent
+qualifiée de '**fréquentielle**'. Sa précision dépend du nombre de
+répétitions: plus N est grand, plus on obtient une valeur s'approchant
+de la probabilité '**théorique**', que l'on obtient de manière
+analytique. Pour $N = \infty$, ces deux probabilités sont égales. Ce
+fait définit la '**Loi des Grands Nombres**': lorsque l'expérience est
+effectuée un très grand nombre de fois, la probabilité fréquentielle
+tend à se rapprocher de la probabilité théorique, ce que traduit
+formellement l'équation @eq-lgn.
+
+$$\displaystyle \lim_{N \to \infty} \frac{nE}{N}=\frac{nE}{nS}$$ {#eq-lgn}
+
+###### Par calcul combinatoire:
+
+1.  Pour obtenir trois lettres différentes dans un mot de passe, il est
+    nécessaire que la sélection se fasse **sans remise**. De cette
+    manière, on s'assure qu'une lettre donnée ne peut pas apparaître une
+    seconde fois dans la séquence de 3 lettres. Le nombre de 'succès'
+    (**nE**) s'obtient donc en considérant que 26 lettres sont
+    disponibles pour la première position; une fois cette lettre
+    sélectionnée, il en reste 25 pour la seconde; puis 24 pour la
+    troisième. Le nombre total de mots de passe composés de trois
+    lettres différentes est donc:
+
+```{r}
+#| code-fold: false
+
+26*25*24
+```
+
+Ce résultat correspond au nombre de permutations de 26 objets (ici, des
+lettres) pris 3 (longueur des mots de passe) à la fois, comme nous le
+verrons plus loin.
+
+2.  On obtient le nombre total de mots de passe composés de trois
+    lettres qu'il est possible de former en procédant à une sélection
+    **avec remise**. Dans ce cas, chacune des trois lettres sera l'une
+    des 26 lettres de l'alphabet, et nS est égal à:
+
+```{r}
+#| code-fold: false
+
+paste("nS = ", 26*26*26)
+```
+
+Finalement, la probabilité d'obtenir un mot de passe composé de trois
+lettres différentes est le rapport entre ces deux quantités:
+
+$$(26\cdot25\cdot24)/26^3=`r round((26*25*24)/26^3, 4)`$$
+
+
+Cette probabilité est qualifiée de '**théorique**', par opposition à la
+probabilité **fréquentielle** définie dans les paragraphes précédents.
+
+Notons finalement que dans ce dernier exemple, la probabilité
+fréquentielle obtenue par simulation (100,000 essais) est en pratique
+égale à la probabilité théorique.
+
+### Exercice 1
+
+1.  Pour chacune des situations suivantes, définissez l'expérience
+    aléatoire, l'espace échantillonnal, ce que pourrait être un
+    événement, et calculez nE et nS:
+
+-   Dans un jeu de hasard, on lance 3 pièces de monnaie et on gagne si
+    on obtient 3 FACES ou 3 PILES.
+
+-   Dans une usine, on fabrique 12 instruments par heure. Ces 12
+    instruments sont ensuite mis en boîte, à la condition qu'il n'y ait
+    pas plus de 2 instruments présentant des défauts de fabrication.
+
+-   Dans une classe de mathématiques, 35 étudiants sont inscrits. Le
+    professeur espère qu'il n'y aura pas plus de 5 étudiants qui
+    échoueront à ce cours.
+
+-   En période de pandémie, un restaurant ne peut accueillir plus de 5
+    clients à la fois. À l'extérieur, 15 personnes attendent pour y
+    entrer et on choisit au hasard celles qui sont admises.
+
+2.  En période de pandémie, un restaurant ne peut accueillir plus de 5
+    clients à la fois. À l'extérieur, 15 personnes attendent pour y
+    entrer et on choisit au hasard celles qui sont admises, et ces 15
+    personnes portent toutes des noms différents. Désignons-les par les
+    numéros 1 à 15.
+
+-   Quelle est la valeur de nE, si on veut admettre les personnes 1 à 5?
+-   Quelle est la valeur de nS dans cette situation?
+-   Quelle est la probabilité que les personnes 1 à 5 soient admises?
+
+3.  De combien de façons différentes peut---on répartir un groupe de 7
+    personnes sur une rangée de 7 chaises ?
+
+4.  Trois garçons et deux filles prennent place sur un banc public de 5
+    places:
+
+-   De combien de façons différentes, 3 garçons et 2 filles peuvent-ils
+    prendre place sur ce banc?
+-   De combien de façons peuvent-ils s'asseoir si les garçons s'assoient
+    les uns à côté des autres et s'il en est de même pour les filles ?
+-   De combien de manières différentes peuvent---ils s'asseoir si
+    seulement les filles s'assoient l'une à côté de l'autre?
