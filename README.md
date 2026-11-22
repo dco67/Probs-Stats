@@ -1,2 +1,2 @@
 # Probs-Stats
-Document utilisé dans le cours IST-6006, offert à l'ISTEAH (Haiti)
+Document utilisé dans le cours IST-6005, offert à l'ISTEAH (Haiti)
